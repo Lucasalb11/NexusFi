@@ -5,12 +5,13 @@ Monorepo for the **NexusFi** project (Next.js frontend, Node.js backend, Soroban
 ## Repository structure
 
 ```
-nexusfi/
+NexusFi/
 ├── apps/
 │   ├── frontend/     # Next.js 14 (App Router, TypeScript, Tailwind)
 │   └── backend/      # Node.js + Express (REST API)
 ├── contracts/        # Soroban (Rust) - Stellar smart contracts
-├── workflows/        # CRE / workflows (Chainlink, pipelines)
+├── workflows/        # CRE workflows (Chainlink)
+│   └── cre/          # NexusFi CRE workflow (cron, configs, project.yaml)
 ├── docs/             # Technical documentation
 ├── package.json      # Root (pnpm workspaces)
 ├── pnpm-workspace.yaml
@@ -31,7 +32,7 @@ nexusfi/
 1. **Clone and install dependencies**
 
    ```bash
-   cd "Chainlink-convergence-Hackaton"
+   git clone <repo-url> NexusFi && cd NexusFi
    pnpm install
    ```
 
@@ -44,7 +45,14 @@ nexusfi/
 
    To run only the frontend or backend, use the `.env.example` files in `apps/frontend` and `apps/backend` as reference.
 
-3. **Development**
+3. **Setup Stellar Testnet** (for deploying Soroban contracts)
+
+   - Install [Soroban CLI](https://soroban.stellar.org/docs/getting-started/setup#install-the-soroban-cli): `cargo install soroban-cli`
+   - Create a keypair and fund it on testnet (e.g. [Friendbot](https://laboratory.stellar.org/#account-creator?network=test)).
+   - In `.env`, set `SOROBAN_RPC_URL`, `SOROBAN_NETWORK_PASSPHRASE`, and `SOROBAN_SECRET_KEY` (see `.env.example`; testnet values are pre-filled).
+   - Full steps and verify commands: [Stellar Testnet setup](docs/stellar-testnet.md).
+
+4. **Development**
 
    - Full stack (frontend + backend in parallel):
      ```bash
@@ -53,13 +61,13 @@ nexusfi/
    - Frontend only: `pnpm dev:frontend` → http://localhost:3000  
    - Backend only: `pnpm dev:backend` → http://localhost:3001  
 
-4. **Build**
+5. **Build**
 
    ```bash
    pnpm build
    ```
 
-5. **Contracts (Soroban)**
+6. **Contracts (Soroban)**
 
    ```bash
    cd contracts && cargo test && cargo build --release --target wasm32-unknown-unknown
@@ -76,10 +84,22 @@ nexusfi/
 | `pnpm lint`         | Lint all packages                    |
 | `pnpm test`         | Run tests in all packages            |
 
+## CRE workflows
+
+Chainlink CRE workflow is in **`workflows/cre/`**. From repo root:
+
+```bash
+cd workflows/cre && bun install
+cre workflow simulate ./workflows/cre --target=staging-settings
+```
+
+See [workflows/cre/README.md](workflows/cre/README.md) for setup and [workflows/README.md](workflows/README.md) for the workflows overview.
+
 ## Security
 
-- **Never** commit `.env` or files containing secrets.
-- All sensitive keys (API, Soroban, Chainlink) come from environment variables.
+- **Never** commit `.env`, `secrets.yaml`, or any file containing secrets.
+- All sensitive keys (API, Soroban, Chainlink) come from environment variables or local, gitignored `secrets.yaml`.
+- The root `.gitignore` excludes `secrets.yaml`, `**/secrets.yaml`, and `nexusfi/`; keep CRE secrets only in `workflows/cre/.env` or `workflows/cre/secrets.yaml` (both gitignored).
 - Development and production configs should be separate (e.g. `NODE_ENV`, different URLs).
 
 ## Documentation
@@ -87,8 +107,9 @@ nexusfi/
 - [Architecture](docs/architecture.md)
 - [Backend API](docs/api.md)
 - [Deployment](docs/deployment.md)
+- [Stellar Testnet setup](docs/stellar-testnet.md)
 - [Soroban contracts](contracts/README.md)
-- [CRE workflows](workflows/README.md)
+- [Workflows overview](workflows/README.md) · [CRE workflow (workflows/cre)](workflows/cre/README.md)
 
 ## License
 

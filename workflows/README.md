@@ -1,23 +1,32 @@
 # NexusFi - Workflows (CRE)
 
-Directory for **CRE** flows (Chainlink Request & Receive or custom workflows).
+Directory for **CRE** (Chainlink Request & Receive) workflows and related automation.
 
-## Usage
-
-- Place here scripts and workflow definitions that orchestrate:
-  - Chainlink oracle calls
-  - Backend ↔ Soroban contracts integration
-  - Data pipelines (e.g. prices, events)
-
-## Example future structure
+## Structure
 
 ```
 workflows/
-  definitions/   # YAML/JSON flow definitions
-  scripts/       # Node/TS scripts to trigger jobs
-  .env.example   # Variables for Chainlink operators, etc.
+├── cre/                    # Chainlink CRE workflow (NexusFi)
+│   ├── main.ts              # Workflow entry (cron + handler)
+│   ├── config.staging.json
+│   ├── config.production.json
+│   ├── workflow.yaml        # CRE workflow settings
+│   ├── project.yaml         # CRE project settings (RPCs)
+│   ├── .env.example
+│   ├── secrets.yaml.example # Template; copy to secrets.yaml (gitignored)
+│   └── README.md
+└── README.md
 ```
 
-## Environment variables
+## CRE workflow
 
-Use the root monorepo `.env.example`; Chainlink keys must never be committed.
+The NexusFi CRE workflow lives in **`workflows/cre/`**. See [workflows/cre/README.md](cre/README.md) for:
+
+- Prerequisites (Bun, CRE CLI)
+- Setup (`.env`, optional `secrets.yaml`)
+- How to simulate: `cre workflow simulate ./workflows/cre --target=staging-settings`
+
+## Security
+
+- Never commit `.env` or `secrets.yaml` (in any workflow directory).
+- Use the root monorepo `.env.example` for shared vars; Chainlink/CRE keys only in env or local `secrets.yaml`.

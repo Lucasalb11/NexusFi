@@ -11,6 +11,11 @@ node_modules/
 *.pem
 *.key
 secrets/
+# CRE / Chainlink and other YAML secret files
+secrets.yaml
+**/secrets.yaml
+**/.env
+nexusfi/
 
 # Build outputs
 dist/

@@ -1,0 +1,9 @@
+# Secrets and env (never commit)
+.env
+.env.local
+.env.*.local
+secrets.yaml
+
+# Build and deps
+node_modules/
+dist/
