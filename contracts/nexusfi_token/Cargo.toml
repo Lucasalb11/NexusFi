@@ -1,0 +1,21 @@
+[package]
+name = "nexusfi_token"
+version = "0.1.0"
+edition = "2021"
+description = "NexusFi Soroban token contract"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+soroban-sdk = "0.12"
+
+[dev_dependencies]
+soroban-sdk = { version = "0.12", features = ["testutils"] }
+
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1
+strip = "symbols"
+panic = "abort"
