@@ -1,32 +1,32 @@
-# Arquitetura - NexusFi
+# Architecture - NexusFi
 
-## Visão geral
+## Overview
 
-NexusFi é um monorepo que agrupa:
+NexusFi is a monorepo that groups:
 
-| Camada        | Stack        | Descrição                          |
-|---------------|-------------|------------------------------------|
-| **Frontend**  | Next.js 14  | Interface web (App Router, React)  |
-| **Backend**   | Node.js + Express | API REST e orquestração        |
-| **Contracts** | Soroban (Rust) | Smart contracts na Stellar     |
-| **Workflows** | CRE / scripts | Integração Chainlink e pipelines |
+| Layer       | Stack           | Description                          |
+|-------------|-----------------|--------------------------------------|
+| **Frontend** | Next.js 14     | Web UI (App Router, React)           |
+| **Backend**  | Node.js + Express | REST API and orchestration       |
+| **Contracts** | Soroban (Rust) | Smart contracts on Stellar          |
+| **Workflows** | CRE / scripts  | Chainlink integration and pipelines |
 
-## Fluxo de dados
+## Data flow
 
 ```
 [Browser] <-> [Next.js] <-> [Backend API] <-> [Soroban RPC / Chainlink]
                     |
                     v
-              [Contratos Soroban]
+              [Soroban Contracts]
 ```
 
-## Configuração
+## Configuration
 
-- **Desenvolvimento:** `.env` local (nunca commitado), `NODE_ENV=development`.
-- **Produção:** variáveis no ambiente do host/CI; separar URLs e chaves por ambiente.
+- **Development:** Local `.env` (never committed), `NODE_ENV=development`.
+- **Production:** Variables in host/CI environment; separate URLs and keys per environment.
 
-## Segurança
+## Security
 
-- Secrets apenas em variáveis de ambiente.
-- Backend valida e assina operações sensíveis; frontend nunca recebe chaves privadas.
-- Contratos seguem boas práticas Soroban (checks-effects-interactions, acesso restrito).
+- Secrets only in environment variables.
+- Backend validates and signs sensitive operations; frontend never receives private keys.
+- Contracts follow Soroban best practices (checks-effects-interactions, restricted access).

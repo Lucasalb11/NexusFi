@@ -1,23 +1,23 @@
 # NexusFi - Workflows (CRE)
 
-Diretório para fluxos **CRE** (Chainlink Request & Receive ou workflows customizados).
+Directory for **CRE** flows (Chainlink Request & Receive or custom workflows).
 
-## Uso
+## Usage
 
-- Coloque aqui scripts e definições de workflows que orquestram:
-  - Chamadas a oráculos Chainlink
-  - Integração backend ↔ contratos Soroban
-  - Pipelines de dados (ex.: preços, eventos)
+- Place here scripts and workflow definitions that orchestrate:
+  - Chainlink oracle calls
+  - Backend ↔ Soroban contracts integration
+  - Data pipelines (e.g. prices, events)
 
-## Exemplo de estrutura futura
+## Example future structure
 
 ```
 workflows/
-  definitions/   # YAML/JSON de definição de fluxos
-  scripts/       # Scripts Node/TS para disparar jobs
-  .env.example   # Variáveis para operadores Chainlink, etc.
+  definitions/   # YAML/JSON flow definitions
+  scripts/       # Node/TS scripts to trigger jobs
+  .env.example   # Variables for Chainlink operators, etc.
 ```
 
-## Variáveis de ambiente
+## Environment variables
 
-Use o `.env.example` na raiz do monorepo; chaves Chainlink nunca devem ser commitadas.
+Use the root monorepo `.env.example`; Chainlink keys must never be committed.

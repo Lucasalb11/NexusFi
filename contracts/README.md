@@ -1,31 +1,31 @@
-# NexusFi - Contratos Soroban (Rust)
+# NexusFi - Soroban Contracts (Rust)
 
-Contratos inteligentes para a rede Stellar (Soroban).
+Smart contracts for the Stellar network (Soroban).
 
-## Pré-requisitos
+## Prerequisites
 
 - [Rust](https://rustup.rs/) (stable)
 - [Soroban CLI](https://soroban.stellar.org/docs/getting-started/setup#install-the-soroban-cli)
 
-## Comandos
+## Commands
 
 ```bash
-# Testes
+# Tests
 cargo test
 
-# Build (release, otimizado para Soroban)
+# Build (release, optimized for Soroban)
 cargo build --release --target wasm32-unknown-unknown
 
-# Deploy (exemplo com Soroban CLI)
+# Deploy (example with Soroban CLI)
 # soroban contract deploy --wasm target/wasm32-unknown-unknown/release/nexusfi_token.wasm --source <SECRET_KEY> --rpc-url <RPC_URL> --network-passphrase "<PASSPHRASE>"
 ```
 
-## Estrutura
+## Structure
 
-- `nexusfi_token/` – contrato de token placeholder; substitua pela lógica desejada ou use o token padrão Stellar.
+- `nexusfi_token/` – placeholder token contract; replace with desired logic or use the default Stellar token.
 
-## Segurança
+## Security
 
-- Nunca commitar chaves privadas.
-- Use variáveis de ambiente para `SOROBAN_SECRET_KEY` e RPC URLs.
-- Siga as [boas práticas Soroban](https://soroban.stellar.org/docs).
+- Never commit private keys.
+- Use environment variables for `SOROBAN_SECRET_KEY` and RPC URLs.
+- Follow [Soroban best practices](https://soroban.stellar.org/docs).

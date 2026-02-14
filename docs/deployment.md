@@ -1,10 +1,10 @@
-# Deploy - NexusFi
+# Deployment - NexusFi
 
-## Pré-requisitos
+## Prerequisites
 
 - Node.js >= 18, pnpm >= 8
-- Conta e ambiente na Stellar (testnet/mainnet)
-- (Opcional) Chainlink para oráculos
+- Stellar account and environment (testnet/mainnet)
+- (Optional) Chainlink for oracles
 
 ## Build
 
@@ -13,24 +13,24 @@ pnpm install
 pnpm build
 ```
 
-## Variáveis de produção
+## Production variables
 
-- Definir todas as variáveis do `.env.example` no ambiente de produção.
-- Nunca commitar `.env` ou chaves.
-- Usar secrets do provedor (Vercel, Railway, etc.) para `API_SECRET_KEY`, `SOROBAN_SECRET_KEY`, chaves Chainlink.
+- Set all variables from `.env.example` in the production environment.
+- Never commit `.env` or keys.
+- Use provider secrets (Vercel, Railway, etc.) for `API_SECRET_KEY`, `SOROBAN_SECRET_KEY`, Chainlink keys.
 
-## Frontend (ex.: Vercel)
+## Frontend (e.g. Vercel)
 
-- Build command: `pnpm build:frontend` (ou `pnpm --filter frontend build`).
-- Root directory: `apps/frontend` ou configurar monorepo no painel.
-- Variáveis: `NEXT_PUBLIC_API_URL` apontando para o backend em produção.
+- Build command: `pnpm build:frontend` (or `pnpm --filter frontend build`).
+- Root directory: `apps/frontend` or configure monorepo in the dashboard.
+- Variables: `NEXT_PUBLIC_API_URL` pointing to the backend in production.
 
-## Backend (ex.: Node em VPS/container)
+## Backend (e.g. Node on VPS/container)
 
-- Rodar `pnpm --filter backend start` após `pnpm build`.
-- Garantir `NODE_ENV=production` e `PORT` definidos.
+- Run `pnpm --filter backend start` after `pnpm build`.
+- Ensure `NODE_ENV=production` and `PORT` are set.
 
-## Contratos Soroban
+## Soroban contracts
 
-- Build: `cargo build --release --target wasm32-unknown-unknown` em `contracts/nexusfi_token`.
-- Deploy via Soroban CLI ou ferramenta de deploy do projeto, usando RPC e network passphrase da rede alvo.
+- Build: `cargo build --release --target wasm32-unknown-unknown` in `contracts/nexusfi_token`.
+- Deploy via Soroban CLI or project deploy tool, using RPC and network passphrase for the target network.

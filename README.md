@@ -1,57 +1,57 @@
 # NexusFi
 
-Monorepo do projeto **NexusFi** (Frontend Next.js, Backend Node.js, contratos Soroban/Rust e workflows CRE).
+Monorepo for the **NexusFi** project (Next.js frontend, Node.js backend, Soroban/Rust contracts, and CRE workflows).
 
-## Estrutura do repositório
+## Repository structure
 
 ```
 nexusfi/
 ├── apps/
 │   ├── frontend/     # Next.js 14 (App Router, TypeScript, Tailwind)
-│   └── backend/      # Node.js + Express (API REST)
-├── contracts/        # Soroban (Rust) - smart contracts Stellar
+│   └── backend/      # Node.js + Express (REST API)
+├── contracts/        # Soroban (Rust) - Stellar smart contracts
 ├── workflows/        # CRE / workflows (Chainlink, pipelines)
-├── docs/             # Documentação técnica
+├── docs/             # Technical documentation
 ├── package.json      # Root (pnpm workspaces)
 ├── pnpm-workspace.yaml
 ├── tsconfig.base.json
-├── .env.example      # Exemplo de variáveis (copiar para .env)
+├── .env.example      # Example env vars (copy to .env)
 └── README.md
 ```
 
-## Pré-requisitos
+## Prerequisites
 
 - **Node.js** >= 18
 - **pnpm** >= 8 (`npm install -g pnpm`)
-- **Rust** (para contratos): [rustup.rs](https://rustup.rs)
-- **Soroban CLI** (opcional, para deploy): [Soroban docs](https://soroban.stellar.org/docs/getting-started/setup)
+- **Rust** (for contracts): [rustup.rs](https://rustup.rs)
+- **Soroban CLI** (optional, for deploy): [Soroban docs](https://soroban.stellar.org/docs/getting-started/setup)
 
 ## Setup
 
-1. **Clonar e instalar dependências**
+1. **Clone and install dependencies**
 
    ```bash
-   cd "Chainlink- convergence- Hackaton"
+   cd "Chainlink-convergence-Hackaton"
    pnpm install
    ```
 
-2. **Variáveis de ambiente**
+2. **Environment variables**
 
    ```bash
    cp .env.example .env
-   # Editar .env e preencher valores (nunca commitar .env)
+   # Edit .env and fill in values (never commit .env)
    ```
 
-   Para rodar apenas frontend ou backend, pode usar os `.env.example` em `apps/frontend` e `apps/backend` como referência.
+   To run only the frontend or backend, use the `.env.example` files in `apps/frontend` and `apps/backend` as reference.
 
-3. **Desenvolvimento**
+3. **Development**
 
-   - Tudo (frontend + backend em paralelo):
+   - Full stack (frontend + backend in parallel):
      ```bash
      pnpm dev
      ```
-   - Só frontend: `pnpm dev:frontend` → http://localhost:3000  
-   - Só backend: `pnpm dev:backend` → http://localhost:3001  
+   - Frontend only: `pnpm dev:frontend` → http://localhost:3000  
+   - Backend only: `pnpm dev:backend` → http://localhost:3001  
 
 4. **Build**
 
@@ -59,37 +59,37 @@ nexusfi/
    pnpm build
    ```
 
-5. **Contratos (Soroban)**
+5. **Contracts (Soroban)**
 
    ```bash
    cd contracts && cargo test && cargo build --release --target wasm32-unknown-unknown
    ```
 
-## Scripts principais (raiz)
+## Main scripts (root)
 
-| Script            | Descrição                          |
-|-------------------|------------------------------------|
-| `pnpm dev`        | Sobe frontend e backend em dev     |
-| `pnpm dev:frontend` | Apenas Next.js                   |
-| `pnpm dev:backend`  | Apenas API Express               |
-| `pnpm build`      | Build de todos os workspaces       |
-| `pnpm lint`       | Lint em todos os pacotes           |
-| `pnpm test`       | Testes em todos os pacotes         |
+| Script              | Description                          |
+|---------------------|--------------------------------------|
+| `pnpm dev`          | Runs frontend and backend in dev     |
+| `pnpm dev:frontend` | Next.js only                         |
+| `pnpm dev:backend`  | Express API only                     |
+| `pnpm build`        | Build all workspaces                 |
+| `pnpm lint`         | Lint all packages                    |
+| `pnpm test`         | Run tests in all packages            |
 
-## Segurança
+## Security
 
-- **Nunca** commitar `.env` ou ficheiros com secrets.
-- Todas as chaves sensíveis (API, Soroban, Chainlink) vêm de variáveis de ambiente.
-- Configurações de desenvolvimento e produção devem estar separadas (ex.: `NODE_ENV`, URLs diferentes).
+- **Never** commit `.env` or files containing secrets.
+- All sensitive keys (API, Soroban, Chainlink) come from environment variables.
+- Development and production configs should be separate (e.g. `NODE_ENV`, different URLs).
 
-## Documentação
+## Documentation
 
-- [Arquitetura](docs/architecture.md)
-- [API Backend](docs/api.md)
-- [Deploy](docs/deployment.md)
-- [Contratos Soroban](contracts/README.md)
-- [Workflows CRE](workflows/README.md)
+- [Architecture](docs/architecture.md)
+- [Backend API](docs/api.md)
+- [Deployment](docs/deployment.md)
+- [Soroban contracts](contracts/README.md)
+- [CRE workflows](workflows/README.md)
 
-## Licença
+## License
 
-Privado / conforme regras do hackathon.
+Private / per hackathon rules.

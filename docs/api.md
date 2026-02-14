@@ -2,16 +2,16 @@
 
 ## Base URL
 
-- Desenvolvimento: `http://localhost:3001`
-- Produção: configurável via `NEXT_PUBLIC_API_URL` (frontend) e variável de ambiente no backend.
+- Development: `http://localhost:3001`
+- Production: configurable via `NEXT_PUBLIC_API_URL` (frontend) and environment variable on the backend.
 
 ## Endpoints
 
 ### Health check
 
 - **GET** `/health`
-- Resposta: `{ "status": "ok", "timestamp": "<ISO8601>" }`
+- Response: `{ "status": "ok", "timestamp": "<ISO8601>" }`
 
 ---
 
-Endpoints adicionais (auth, contratos, oráculos) devem ser documentados aqui conforme forem implementados.
+Additional endpoints (auth, contracts, oracles) should be documented here as they are implemented.
