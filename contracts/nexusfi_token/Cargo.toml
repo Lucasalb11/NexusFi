@@ -2,16 +2,16 @@
 name = "nexusfi_token"
 version = "0.1.0"
 edition = "2021"
-description = "NexusFi Soroban token contract"
+description = "NexusFi nUSD stablecoin — SEP-41 compatible token on Soroban"
 
 [lib]
 crate-type = ["cdylib"]
 
 [dependencies]
-soroban-sdk = "0.12"
+soroban-sdk = { workspace = true }
 
-[dev_dependencies]
-soroban-sdk = { version = "0.12", features = ["testutils"] }
+[dev-dependencies]
+soroban-sdk = { workspace = true, features = ["testutils"] }
 
 [profile.release]
 opt-level = "z"

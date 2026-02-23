@@ -1,2 +1,5 @@
 [workspace]
-members = ["nexusfi_token"]
+members = ["nexusfi_token", "credit_score", "credit_line"]
+
+[workspace.dependencies]
+soroban-sdk = "22.0.10"

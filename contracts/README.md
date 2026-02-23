@@ -1,31 +1,69 @@
-# NexusFi - Soroban Contracts (Rust)
+# NexusFi — Soroban Smart Contracts
 
-Smart contracts for the Stellar network (Soroban).
+Three Soroban contracts powering the NexusFi decentralized fintech.
 
-## Prerequisites
+## Contracts
 
-- [Rust](https://rustup.rs/) (stable)
-- [Soroban CLI](https://soroban.stellar.org/docs/getting-started/setup#install-the-soroban-cli)
+### nexusfi_token (nUSD Stablecoin)
+SEP-41 compatible token on Stellar Soroban.
 
-## Commands
+**Functions:**
+- `initialize(admin, name, symbol, decimals)` — One-time setup
+- `mint(to, amount)` — Admin-only, mints nUSD when user deposits fiat
+- `burn(from, amount)` — Burns nUSD when user withdraws
+- `transfer(from, to, amount)` — P2P transfer
+- `approve(from, spender, amount, expiration)` — Set allowance
+- `transfer_from(spender, from, to, amount)` — Delegated transfer
+- `balance(id)`, `total_supply()`, `name()`, `symbol()`, `decimals()`
+
+### credit_score
+Stores AI-computed credit scores on-chain, written by CRE workflow.
+
+**Functions:**
+- `initialize(admin)` — One-time setup
+- `set_score(user, score, timestamp, metadata_hash)` — Admin-only write
+- `get_score(user)` — Read latest score
+- `get_history(user)` — Read score history (up to 20 records)
+
+Score range: 0–1000.
+
+### credit_line
+Decentralized credit card logic with score-based tiers.
+
+**Functions:**
+- `initialize(admin)` — One-time setup
+- `open_credit_line(user, score, timestamp)` — Admin-only, sets limit based on score tier
+- `use_credit(user, amount)` — Spend on credit card
+- `repay(user, amount)` — Repay balance
+- `get_credit_info(user)`, `get_available(user)`
+
+**Score Tiers:**
+| Score | Limit | Interest Rate |
+|-------|-------|---------------|
+| >= 800 | $10,000 | 3.0% APR |
+| >= 600 | $5,000 | 8.0% APR |
+| >= 400 | $2,000 | 15.0% APR |
+| < 400 | $500 | 25.0% APR |
+
+## Building
 
 ```bash
-# Tests
-cargo test
-
-# Build (release, optimized for Soroban)
-cargo build --release --target wasm32-unknown-unknown
-
-# Deploy (example with Soroban CLI)
-# soroban contract deploy --wasm target/wasm32-unknown-unknown/release/nexusfi_token.wasm --source <SECRET_KEY> --rpc-url <RPC_URL> --network-passphrase "<PASSPHRASE>"
+cd contracts
+cargo build --target wasm32-unknown-unknown --release
 ```
 
-## Structure
+## Testing
 
-- `nexusfi_token/` – placeholder token contract; replace with desired logic or use the default Stellar token.
+```bash
+cd contracts
+cargo test
+```
 
-## Security
+## Deploying
 
-- Never commit private keys.
-- Use environment variables for `SOROBAN_SECRET_KEY` and RPC URLs.
-- Follow [Soroban best practices](https://soroban.stellar.org/docs).
+```bash
+stellar contract deploy \
+  --wasm target/wasm32-unknown-unknown/release/nexusfi_token.wasm \
+  --source <YOUR_SECRET_KEY> \
+  --network testnet
+```

@@ -1,48 +1,52 @@
-# NexusFi - CRE Workflow
+# NexusFi — CRE Workflows
 
-Chainlink CRE (Request & Receive) workflow for NexusFi. Cron example runs on a schedule (e.g. every 30s in staging).
+Chainlink Runtime Environment workflows for NexusFi, targeting 4 hackathon tracks.
 
-## Prerequisites
+## Workflows
 
-- [Bun](https://bun.sh/) (or Node.js; CRE CLI may use Bun for setup)
-- Chainlink CRE CLI and account (see [CRE docs](https://docs.chain.link/chainlink-automation))
+All workflows are in [`main.ts`](main.ts):
 
-## Setup
+### WF1: Proof of Reserve (DeFi & Tokenization)
+- **Trigger**: Cron (every 30s)
+- **Flow**: HTTP GET Stellar Horizon (issuer balance) → HTTP GET price feed (CoinGecko) → Compute reserve ratio → Log attestation
+- **Integration**: Stellar Horizon API + CoinGecko price API
 
-1. **Environment**
+### WF2: AI Credit Scoring (CRE & AI)
+- **Trigger**: Cron
+- **Flow**: HTTP GET Stellar Horizon (user tx history) → Process with AI/LLM scoring model → Compute credit score → Log attestation
+- **Integration**: Stellar Horizon API + AI scoring engine
 
-   Copy the example env and add your keys (never commit `.env`):
+### WF3: Risk Monitor (Risk & Compliance)
+- **Trigger**: Cron (every 30s)
+- **Flow**: HTTP GET Stellar Horizon (protocol metrics) → HTTP GET price feeds → Compute risk → Trigger alert if threshold breached
+- **Integration**: Stellar Horizon API + CoinGecko API
 
-   ```bash
-   cp .env.example .env
-   ```
+### WF4: Privacy Credit Check (Privacy)
+- **Trigger**: Cron
+- **Flow**: Confidential HTTP to credit API → Process eligibility in TEE → Return encrypted result
+- **Integration**: Stellar Horizon API (Confidential HTTP in production)
 
-   If your workflow needs secrets for the CRE runner, create `secrets.yaml` in this directory (see `secrets.yaml.example`). This file is **gitignored**.
+## Running
 
-2. **Install dependencies**
+```bash
+# Install dependencies
+bun install
 
-   From this directory:
+# Simulate workflows
+cre workflow simulate --workflow-file workflow.yaml --target staging
+```
 
-   ```bash
-   cd workflows/cre && bun install
-   ```
+## Configuration
 
-3. **Simulate the workflow**
+- `workflow.yaml` — Workflow targets (staging/production)
+- `project.yaml` — RPC endpoints (Ethereum Sepolia)
+- `config.staging.json` — Schedule: `*/30 * * * * *`
+- `secrets.yaml` — Credentials (gitignored, create from `secrets.yaml.example`)
 
-   From the **repository root**:
+## SDK
 
-   ```bash
-   cre workflow simulate ./workflows/cre --target=staging-settings
-   ```
-
-## Structure
-
-- `main.ts` – Workflow entry (cron trigger + handler)
-- `config.staging.json` / `config.production.json` – Schedule and config per target
-- `workflow.yaml` – CRE workflow settings (workflow name, paths)
-- `project.yaml` – CRE project settings (RPCs, etc.)
-
-## Security
-
-- Never commit `.env` or `secrets.yaml`.
-- Use the root monorepo `.env.example` for shared vars; Chainlink keys only in env or `secrets.yaml` (local).
+Uses `@chainlink/cre-sdk` v1.0.9 with:
+- `CronCapability` — Schedule-based triggers
+- `HTTPClient` — Offchain API requests with consensus
+- `consensusMedianAggregation` — Numeric consensus
+- `ConsensusAggregationByFields` — Complex object consensus

@@ -1,51 +1,75 @@
+# =====================================================================
+# NexusFi .gitignore
+# SECURITY FIRST — Never commit secrets, keys, or credentials.
+# All sensitive values MUST come from environment variables or
+# local gitignored files (.env, secrets.yaml). See .env.example.
+# =====================================================================
+
 # Dependencies
 node_modules/
 .pnpm-store/
 
-# Environment & secrets (NUNCA commitar)
+# ── Environment & Secrets (NEVER COMMIT) ─────────────────────────────
 .env
-.env.local
-.env.*.local
-.env.development
-.env.production
-*.pem
-*.key
+.env.*
+!.env.example
+**/.env
+**/.env.*
+!**/.env.example
 secrets/
-# CRE / Chainlink and other YAML secret files
 secrets.yaml
 **/secrets.yaml
-**/.env
-nexusfi/
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*.keystore
+*.secret
+*.credential*
+**/serviceAccountKey.json
+**/firebase-adminsdk*.json
+**/google-credentials*.json
 
-# Build outputs
+# Wallet / blockchain key files
+*.wif
+*.seed
+**/keypair.json
+**/wallet.json
+**/identity.json
+
+# ── Build outputs ────────────────────────────────────────────────────
 dist/
 build/
 .next/
 out/
 *.tsbuildinfo
 
-# Logs
+# ── Logs ─────────────────────────────────────────────────────────────
 logs/
 *.log
 npm-debug.log*
 pnpm-debug.log*
 
-# IDE / OS
+# ── IDE / OS ─────────────────────────────────────────────────────────
 .idea/
 .vscode/
 *.swp
 .DS_Store
 Thumbs.db
 
-# Testing
+# ── Testing ──────────────────────────────────────────────────────────
 coverage/
 .nyc_output/
 
-# Soroban / Rust
+# ── Soroban / Rust ───────────────────────────────────────────────────
 contracts/target/
 **/Cargo.lock
 
-# Misc
+# ── CRE / Chainlink ─────────────────────────────────────────────────
+nexusfi/
+
+# ── Misc ─────────────────────────────────────────────────────────────
 *.tgz
 .cache/
 .turbo/

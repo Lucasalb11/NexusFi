@@ -12,11 +12,16 @@
     "build:backend": "pnpm --filter backend build",
     "lint": "pnpm run -r lint",
     "test": "pnpm run -r test",
-    "clean": "pnpm run -r clean && rm -rf node_modules"
+    "clean": "pnpm run -r clean && rm -rf node_modules",
+    "setup:hooks": "cp scripts/pre-commit-secrets.sh .git/hooks/pre-commit && chmod +x .git/hooks/pre-commit && echo '✅ Pre-commit secret scanner installed.'",
+    "scan:secrets": "gitleaks detect --source . --config .gitleaks.toml --verbose"
   },
   "engines": {
     "node": ">=18.0.0",
     "pnpm": ">=8.0.0"
   },
-  "packageManager": "pnpm@9.0.0"
+  "packageManager": "pnpm@9.0.0",
+  "devDependencies": {
+    "playwright": "^1.58.2"
+  }
 }
