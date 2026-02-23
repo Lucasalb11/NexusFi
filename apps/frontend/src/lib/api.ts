@@ -1,5 +1,18 @@
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
 
+const STORAGE_KEY = "nexusfi_wallet";
+
+function getStoredAddress(): string | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw).address ?? null;
+  } catch {
+    return null;
+  }
+}
+
 type RequestOptions = {
   method?: string;
   body?: unknown;
@@ -18,6 +31,11 @@ class ApiError extends Error {
 
 async function request<T>(path: string, opts: RequestOptions = {}): Promise<T> {
   const { method = "GET", body, headers = {} } = opts;
+
+  const address = getStoredAddress();
+  if (address) {
+    headers["x-stellar-address"] = address;
+  }
 
   const res = await fetch(`${API_BASE}${path}`, {
     method,

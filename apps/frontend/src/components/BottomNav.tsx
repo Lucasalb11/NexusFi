@@ -23,8 +23,8 @@ export default function BottomNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 glass safe-bottom">
-      <div className="flex items-center justify-around px-2 pt-2 pb-1 max-w-lg mx-auto">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-bg-primary/90 backdrop-blur-xl border-t border-border/30 safe-bottom">
+      <div className="flex items-center justify-around px-2 pt-2.5 pb-1 max-w-lg mx-auto">
         {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
           const active = pathname === href;
           return (
@@ -39,10 +39,12 @@ export default function BottomNav() {
               )}
             >
               <Icon
-                size={22}
-                strokeWidth={active ? 2.5 : 1.8}
+                size={20}
+                strokeWidth={active ? 2.2 : 1.6}
               />
-              <span className="text-[10px] font-medium">{label}</span>
+              <span className="text-[10px] font-medium tracking-wide">
+                {label}
+              </span>
             </Link>
           );
         })}

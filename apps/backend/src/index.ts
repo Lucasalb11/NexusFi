@@ -19,6 +19,8 @@ import walletRoutes from "./routes/wallet.js";
 import creditRoutes from "./routes/credit.js";
 import depositRoutes from "./routes/deposit.js";
 import creRoutes from "./routes/cre.js";
+import bridgeRoutes from "./routes/bridge.js";
+import passkeyRoutes from "./routes/passkey.js";
 
 const app = express();
 const port = env.PORT ?? 3001;
@@ -40,6 +42,8 @@ app.use("/api/wallet", walletRoutes);
 app.use("/api/credit", creditRoutes);
 app.use("/api/deposit", depositRoutes);
 app.use("/api/cre", creRoutes);
+app.use("/api/bridge", bridgeRoutes);
+app.use("/api/passkey", passkeyRoutes);
 
 app.listen(port, () => {
   console.log(`NexusFi Backend running at http://localhost:${port}`);
@@ -47,5 +51,7 @@ app.listen(port, () => {
   console.log(`  /api/wallet/*      — Wallet operations`);
   console.log(`  /api/credit/*      — Credit scoring & card`);
   console.log(`  /api/deposit/*     — Deposit/Withdraw`);
+  console.log(`  /api/bridge/*      — Cross-chain bridge (CRE)`);
+  console.log(`  /api/passkey/*     — Passkey smart wallet`);
   console.log(`  /api/cre/*         — CRE workflow status`);
 });

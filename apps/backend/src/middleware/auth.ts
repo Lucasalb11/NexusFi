@@ -5,7 +5,7 @@ import type { Request, Response, NextFunction } from "express";
  * signature to authenticate requests. For the hackathon demo, we accept
  * a simple x-demo-address header.
  */
-export function demoAuth(req: Request, res: Response, next: NextFunction) {
+export function demoAuth(req: Request, _res: Response, next: NextFunction) {
   const address =
     req.headers["x-stellar-address"] as string | undefined;
 

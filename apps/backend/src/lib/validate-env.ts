@@ -57,10 +57,34 @@ const ENV_SCHEMA: EnvVar[] = [
     description: "Stellar Horizon API URL",
   },
   {
-    key: "NUSD_ISSUER_ADDRESS",
+    key: "DEPLOYER_ADDRESS",
     required: false,
     sensitive: false,
-    description: "nUSD token issuer Stellar address",
+    description: "Deployer public address (admin for all contracts)",
+  },
+  {
+    key: "NUSD_CONTRACT_ID",
+    required: false,
+    sensitive: false,
+    description: "nexusfi_token (nUSD) Soroban contract ID",
+  },
+  {
+    key: "NBRL_CONTRACT_ID",
+    required: false,
+    sensitive: false,
+    description: "nexusfi_token (nBRL) Soroban contract ID",
+  },
+  {
+    key: "CREDIT_SCORE_CONTRACT_ID",
+    required: false,
+    sensitive: false,
+    description: "credit_score Soroban contract ID",
+  },
+  {
+    key: "CREDIT_LINE_CONTRACT_ID",
+    required: false,
+    sensitive: false,
+    description: "credit_line Soroban contract ID",
   },
   {
     key: "FRONTEND_URL",

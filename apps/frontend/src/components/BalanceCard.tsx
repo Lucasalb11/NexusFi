@@ -15,24 +15,25 @@ export default function BalanceCard({ balance, change24h = 0 }: Props) {
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
+      initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
-      className="relative overflow-hidden rounded-3xl gradient-card p-6 border border-border/30"
+      className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-bg-card via-bg-elevated to-bg-card p-6 border border-border/30"
     >
-      <div className="absolute -top-20 -right-20 w-48 h-48 rounded-full bg-accent/10 blur-3xl" />
-      <div className="absolute -bottom-16 -left-16 w-40 h-40 rounded-full bg-purple-600/10 blur-3xl" />
+      <div className="absolute top-0 right-0 w-40 h-40 rounded-full bg-accent/[0.04] blur-3xl" />
 
       <div className="relative z-10">
         <div className="flex items-center justify-between mb-1">
-          <span className="text-text-secondary text-sm">Total balance</span>
+          <span className="text-text-muted text-xs uppercase tracking-widest font-medium">
+            Total Balance
+          </span>
           <button
             onClick={() => setVisible(!visible)}
             className="p-1.5 rounded-lg hover:bg-white/5 transition-colors"
           >
             {visible ? (
-              <Eye size={18} className="text-text-muted" />
+              <Eye size={16} className="text-text-muted" />
             ) : (
-              <EyeOff size={18} className="text-text-muted" />
+              <EyeOff size={16} className="text-text-muted" />
             )}
           </button>
         </div>
@@ -41,7 +42,7 @@ export default function BalanceCard({ balance, change24h = 0 }: Props) {
           key={visible ? "show" : "hide"}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="text-4xl font-bold tracking-tight mb-3"
+          className="text-3xl font-semibold tracking-tight mb-3 font-serif"
         >
           {visible ? formatCurrency(balance) : "••••••"}
         </motion.p>
@@ -49,16 +50,16 @@ export default function BalanceCard({ balance, change24h = 0 }: Props) {
         {visible && change24h !== 0 && (
           <div className="flex items-center gap-1.5">
             <TrendingUp
-              size={14}
+              size={13}
               className={change24h > 0 ? "text-success" : "text-danger"}
             />
             <span
-              className={`text-sm font-medium ${change24h > 0 ? "text-success" : "text-danger"}`}
+              className={`text-xs font-medium ${change24h > 0 ? "text-success" : "text-danger"}`}
             >
               {change24h > 0 ? "+" : ""}
               {change24h.toFixed(2)}%
             </span>
-            <span className="text-text-muted text-sm">24h</span>
+            <span className="text-text-muted text-xs">24h</span>
           </div>
         )}
       </div>

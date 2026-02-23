@@ -15,18 +15,19 @@ import { useState, useEffect, useCallback } from "react";
 import BalanceCard from "@/components/BalanceCard";
 import TransactionList from "@/components/TransactionList";
 import {
-  MOCK_BALANCE,
   MOCK_CHANGE_24H,
   MOCK_TRANSACTIONS,
   MOCK_RISK_METRICS,
 } from "@/lib/mock-data";
+import { useWallet } from "@/context/WalletContext";
 import { api } from "@/lib/api";
+import { shortenAddress } from "@/lib/format";
 
 const QUICK_ACTIONS = [
-  { href: "/wallet?action=send", icon: ArrowUpRight, label: "Send", color: "from-violet-600 to-purple-600" },
-  { href: "/wallet?action=receive", icon: ArrowDownLeft, label: "Receive", color: "from-emerald-600 to-teal-600" },
-  { href: "/deposit", icon: Plus, label: "Deposit", color: "from-blue-600 to-indigo-600" },
-  { href: "/credit", icon: CreditCard, label: "Credit", color: "from-amber-600 to-orange-600" },
+  { href: "/wallet?action=send", icon: ArrowUpRight, label: "Send" },
+  { href: "/wallet?action=receive", icon: ArrowDownLeft, label: "Receive" },
+  { href: "/deposit", icon: Plus, label: "Deposit" },
+  { href: "/credit", icon: CreditCard, label: "Credit" },
 ] as const;
 
 type RiskData = {
@@ -37,9 +38,30 @@ type RiskData = {
   timestamp: string;
 };
 
+type BalanceData = {
+  xlm: number;
+  tokens: Record<string, number>;
+};
+
 export default function DashboardPage() {
+  const { address, network } = useWallet();
   const [risk, setRisk] = useState(MOCK_RISK_METRICS);
   const [loadingRisk, setLoadingRisk] = useState(false);
+  const [balance, setBalance] = useState(0);
+  const [, setLoadingBalance] = useState(true);
+
+  const fetchBalance = useCallback(async () => {
+    setLoadingBalance(true);
+    try {
+      const data = await api.get<BalanceData>("/api/wallet/balance");
+      const total = Object.values(data.tokens ?? {}).reduce((sum, v) => sum + (Number(v) || 0), 0);
+      setBalance(total || data.xlm || 0);
+    } catch {
+      setBalance(0);
+    } finally {
+      setLoadingBalance(false);
+    }
+  }, []);
 
   const fetchRisk = useCallback(async () => {
     setLoadingRisk(true);
@@ -53,15 +75,18 @@ export default function DashboardPage() {
         status: data.alertTriggered ? ("alert" as const) : ("healthy" as const),
       });
     } catch {
-      // use mock data fallback
+      // fallback to mock
     } finally {
       setLoadingRisk(false);
     }
   }, []);
 
   useEffect(() => {
+    fetchBalance();
     fetchRisk();
-  }, [fetchRisk]);
+  }, [fetchBalance, fetchRisk]);
+
+  const initials = address ? address.slice(0, 2) : "NF";
 
   return (
     <div className="space-y-6 pt-6 pb-4">
@@ -71,31 +96,36 @@ export default function DashboardPage() {
         className="flex items-center justify-between"
       >
         <div>
-          <p className="text-text-muted text-sm">Welcome back</p>
-          <h1 className="text-xl font-bold">NexusFi</h1>
+          <p className="text-text-muted text-xs uppercase tracking-widest">Welcome back</p>
+          <h1 className="text-lg font-serif font-semibold mt-0.5">
+            {address ? shortenAddress(address, 6) : "NexusFi"}
+          </h1>
+          {network && (
+            <p className="text-[10px] text-text-muted tracking-wider mt-0.5">
+              {network}
+            </p>
+          )}
         </div>
-        <div className="w-10 h-10 rounded-full gradient-accent flex items-center justify-center">
-          <span className="text-white font-bold text-sm">LO</span>
+        <div className="w-9 h-9 rounded-lg border border-accent/30 bg-bg-card flex items-center justify-center">
+          <span className="text-accent font-serif font-semibold text-sm">{initials}</span>
         </div>
       </motion.div>
 
-      <BalanceCard balance={MOCK_BALANCE} change24h={MOCK_CHANGE_24H} />
+      <BalanceCard balance={balance} change24h={MOCK_CHANGE_24H} />
 
       <div className="grid grid-cols-4 gap-3">
-        {QUICK_ACTIONS.map(({ href, icon: Icon, label, color }, i) => (
+        {QUICK_ACTIONS.map(({ href, icon: Icon, label }, i) => (
           <motion.div
             key={label}
-            initial={{ opacity: 0, y: 10 }}
+            initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 + i * 0.05 }}
+            transition={{ delay: 0.1 + i * 0.04 }}
           >
             <Link href={href} className="flex flex-col items-center gap-2">
-              <div
-                className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${color} flex items-center justify-center shadow-lg`}
-              >
-                <Icon size={20} className="text-white" />
+              <div className="w-11 h-11 rounded-xl border border-border/40 bg-bg-card flex items-center justify-center">
+                <Icon size={18} className="text-accent" />
               </div>
-              <span className="text-xs text-text-secondary font-medium">
+              <span className="text-[10px] text-text-secondary font-medium tracking-wide">
                 {label}
               </span>
             </Link>
@@ -104,64 +134,68 @@ export default function DashboardPage() {
       </div>
 
       <motion.div
-        initial={{ opacity: 0, y: 10 }}
+        initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3 }}
-        className="glass rounded-2xl p-4"
+        className="glass rounded-xl p-4"
       >
-        <div className="flex items-center gap-2 mb-2">
-          <Shield size={16} className="text-success" />
-          <span className="text-sm font-medium">Protocol Health</span>
+        <div className="flex items-center gap-2 mb-3">
+          <Shield size={14} className="text-success" />
+          <span className="text-xs font-medium uppercase tracking-wider">Protocol Health</span>
           <button
             onClick={fetchRisk}
             disabled={loadingRisk}
             className="ml-auto p-1 rounded-lg hover:bg-white/5 transition-colors"
           >
             <RefreshCw
-              size={14}
+              size={13}
               className={`text-text-muted ${loadingRisk ? "animate-spin" : ""}`}
             />
           </button>
-          <span className="text-xs text-success font-medium px-2 py-0.5 rounded-full bg-success/10">
+          <span className={`text-[10px] font-medium px-2 py-0.5 rounded-md uppercase tracking-wider ${
+            risk.status === "healthy"
+              ? "text-success bg-success/10"
+              : "text-danger bg-danger/10"
+          }`}>
             {risk.status}
           </span>
         </div>
         <div className="grid grid-cols-3 gap-3">
           <div>
-            <p className="text-text-muted text-[10px] uppercase tracking-wider">Reserve</p>
-            <p className="text-sm font-semibold tabular-nums">
+            <p className="text-text-muted text-[10px] uppercase tracking-widest">Reserve</p>
+            <p className="text-sm font-semibold tabular-nums mt-0.5">
               {(risk.reserveRatio * 100).toFixed(0)}%
             </p>
           </div>
           <div>
-            <p className="text-text-muted text-[10px] uppercase tracking-wider">Utilization</p>
-            <p className="text-sm font-semibold tabular-nums">
+            <p className="text-text-muted text-[10px] uppercase tracking-widest">Utilization</p>
+            <p className="text-sm font-semibold tabular-nums mt-0.5">
               {(risk.utilizationRate * 100).toFixed(0)}%
             </p>
           </div>
           <div>
-            <p className="text-text-muted text-[10px] uppercase tracking-wider">TVL</p>
-            <p className="text-sm font-semibold tabular-nums">
+            <p className="text-text-muted text-[10px] uppercase tracking-widest">TVL</p>
+            <p className="text-sm font-semibold tabular-nums mt-0.5">
               ${(risk.protocolTvl / 1_000_000).toFixed(2)}M
             </p>
           </div>
         </div>
-        <p className="text-[10px] text-text-muted mt-2">
-          Verified by Chainlink CRE WF3 (Risk & Compliance)
+        <p className="text-[10px] text-text-muted mt-3 tracking-wide">
+          Verified by Chainlink CRE — Risk & Compliance
         </p>
       </motion.div>
 
       <motion.div
-        initial={{ opacity: 0, y: 10 }}
+        initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.4 }}
       >
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-base font-semibold flex items-center gap-2">
-            <Activity size={16} className="text-accent" />
+          <h2 className="text-xs font-medium uppercase tracking-widest flex items-center gap-2 text-text-secondary">
+            <Activity size={14} className="text-accent" />
             Recent Activity
           </h2>
-          <Link href="/wallet" className="text-xs text-accent font-medium">
+          <Link href="/wallet" className="text-[11px] text-accent font-medium tracking-wide">
             View all
           </Link>
         </div>

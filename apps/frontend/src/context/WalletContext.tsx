@@ -1,0 +1,176 @@
+"use client";
+
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+  useRef,
+  type ReactNode,
+} from "react";
+import { api } from "@/lib/api";
+
+type WalletState = {
+  address: string | null;
+  keyId: string | null;
+  network: string;
+  isConnected: boolean;
+  isLoading: boolean;
+  error: string | null;
+  createAccount: (username: string) => Promise<string | null>;
+  signIn: () => Promise<string | null>;
+  disconnect: () => void;
+};
+
+const WalletContext = createContext<WalletState>({
+  address: null,
+  keyId: null,
+  network: "TESTNET",
+  isConnected: false,
+  isLoading: false,
+  error: null,
+  createAccount: async () => null,
+  signIn: async () => null,
+  disconnect: () => {},
+});
+
+const STORAGE_KEY = "nexusfi_wallet";
+
+const RPC_URL = process.env.NEXT_PUBLIC_STELLAR_RPC_URL ?? "https://soroban-testnet.stellar.org";
+const NETWORK_PASSPHRASE =
+  process.env.NEXT_PUBLIC_STELLAR_NETWORK_PASSPHRASE ?? "Test SDF Network ; September 2015";
+const WASM_HASH =
+  process.env.NEXT_PUBLIC_WALLET_WASM_HASH ??
+  "ecd990f0b45ca6817149b6175f79b32efb442f35731985a084131e8265c4cd90";
+
+async function getPasskeyKit() {
+  const { PasskeyKit } = await import("passkey-kit");
+  return new PasskeyKit({
+    rpcUrl: RPC_URL,
+    networkPassphrase: NETWORK_PASSPHRASE,
+    walletWasmHash: WASM_HASH,
+  });
+}
+
+export function WalletProvider({ children }: { children: ReactNode }) {
+  const [address, setAddress] = useState<string | null>(null);
+  const [keyId, setKeyId] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const kitRef = useRef<any>(null);
+
+  useEffect(() => {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      try {
+        const data = JSON.parse(saved);
+        setAddress(data.address ?? null);
+        setKeyId(data.keyId ?? null);
+      } catch {
+        localStorage.removeItem(STORAGE_KEY);
+      }
+    }
+  }, []);
+
+  const persist = useCallback((addr: string, kid: string) => {
+    setAddress(addr);
+    setKeyId(kid);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ address: addr, keyId: kid }));
+  }, []);
+
+  const createAccount = useCallback(async (username: string): Promise<string | null> => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const kit = await getPasskeyKit();
+      kitRef.current = kit;
+
+      const { keyIdBase64, contractId, signedTx } = await kit.createWallet(
+        "NexusFi",
+        username,
+      );
+
+      const xdr = signedTx.toXDR();
+
+      await api.post("/api/passkey/submit", { xdr });
+
+      await api.post("/api/passkey/register", {
+        keyId: keyIdBase64,
+        contractId,
+      });
+
+      persist(contractId, keyIdBase64);
+      setIsLoading(false);
+      return contractId;
+    } catch (err: any) {
+      const msg = err?.message ?? "Failed to create account";
+      console.error("Passkey create error:", msg);
+      setError(msg);
+      setIsLoading(false);
+      return null;
+    }
+  }, [persist]);
+
+  const signIn = useCallback(async (): Promise<string | null> => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const kit = await getPasskeyKit();
+      kitRef.current = kit;
+
+      const { keyIdBase64, contractId } = await kit.connectWallet({
+        getContractId: async (kid: string) => {
+          try {
+            const data = await api.get<{ contractId: string }>(`/api/passkey/lookup/${encodeURIComponent(kid)}`);
+            return data.contractId;
+          } catch {
+            return undefined;
+          }
+        },
+      });
+
+      persist(contractId, keyIdBase64);
+      setIsLoading(false);
+      return contractId;
+    } catch (err: any) {
+      const msg = err?.message ?? "Failed to sign in";
+      console.error("Passkey connect error:", msg);
+      setError(msg);
+      setIsLoading(false);
+      return null;
+    }
+  }, [persist]);
+
+  const disconnect = useCallback(() => {
+    setAddress(null);
+    setKeyId(null);
+    setError(null);
+    kitRef.current = null;
+    localStorage.removeItem(STORAGE_KEY);
+  }, []);
+
+  return (
+    <WalletContext.Provider
+      value={{
+        address,
+        keyId,
+        network: "TESTNET",
+        isConnected: !!address,
+        isLoading,
+        error,
+        createAccount,
+        signIn,
+        disconnect,
+      }}
+    >
+      {children}
+    </WalletContext.Provider>
+  );
+}
+
+export function useWallet() {
+  return useContext(WalletContext);
+}

@@ -11,10 +11,10 @@ type Props = {
 
 function getScoreColor(score: number, max: number) {
   const pct = score / max;
-  if (pct >= 0.8) return { stroke: "#34D399", label: "Excellent", textClass: "text-success" };
-  if (pct >= 0.6) return { stroke: "#A78BFA", label: "Good", textClass: "text-accent-light" };
-  if (pct >= 0.4) return { stroke: "#FBBF24", label: "Fair", textClass: "text-warning" };
-  return { stroke: "#F87171", label: "Poor", textClass: "text-danger" };
+  if (pct >= 0.8) return { stroke: "#34C78C", label: "Excellent", textClass: "text-success" };
+  if (pct >= 0.6) return { stroke: "#BFA36B", label: "Good", textClass: "text-accent" };
+  if (pct >= 0.4) return { stroke: "#EAB33A", label: "Fair", textClass: "text-warning" };
+  return { stroke: "#EF6262", label: "Needs Work", textClass: "text-danger" };
 }
 
 export default function CreditScoreGauge({
@@ -42,7 +42,7 @@ export default function CreditScoreGauge({
             r={radius}
             fill="none"
             stroke="rgb(var(--color-border))"
-            strokeWidth="12"
+            strokeWidth="10"
             strokeDasharray={circumference}
             strokeDashoffset={circumference * 0.25}
             strokeLinecap="round"
@@ -53,7 +53,7 @@ export default function CreditScoreGauge({
             r={radius}
             fill="none"
             stroke={config.stroke}
-            strokeWidth="12"
+            strokeWidth="10"
             strokeDasharray={circumference}
             strokeLinecap="round"
             initial={{ strokeDashoffset: circumference * 0.75 }}
@@ -64,7 +64,7 @@ export default function CreditScoreGauge({
 
         <div className="absolute inset-0 flex flex-col items-center justify-center pt-4">
           <motion.p
-            className="text-4xl font-bold tabular-nums"
+            className="text-4xl font-semibold tabular-nums font-serif"
             initial={{ opacity: 0, scale: 0.5 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.5, type: "spring" }}
@@ -76,8 +76,8 @@ export default function CreditScoreGauge({
           </p>
         </div>
       </div>
-      <p className="text-xs text-text-muted mt-1">
-        AI-powered score (0–{maxScore})
+      <p className="text-[11px] text-text-muted mt-1 tracking-wide">
+        AI Credit Assessment (0–{maxScore})
       </p>
     </div>
   );

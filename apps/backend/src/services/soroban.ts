@@ -4,6 +4,7 @@ import {
   Keypair,
   TransactionBuilder,
   nativeToScVal,
+  scValToNative,
   Address,
   xdr,
   rpc,
@@ -39,6 +40,18 @@ export async function invokeContractRead(
   }
 
   throw new Error(`Contract simulation failed for ${method}`);
+}
+
+/**
+ * Read-only contract call that returns a native JS value instead of raw ScVal.
+ */
+export async function invokeContractReadNative(
+  contractId: string,
+  method: string,
+  args: xdr.ScVal[] = [],
+): Promise<any> {
+  const scval = await invokeContractRead(contractId, method, args);
+  return scValToNative(scval);
 }
 
 /**

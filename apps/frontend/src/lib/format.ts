@@ -24,7 +24,7 @@ export function shortenAddress(address: string, chars = 6): string {
 
 export function formatDate(date: Date | string): string {
   const d = typeof date === "string" ? new Date(date) : date;
-  return new Intl.DateTimeFormat("pt-BR", {
+  return new Intl.DateTimeFormat("en-US", {
     day: "2-digit",
     month: "short",
     hour: "2-digit",
@@ -36,8 +36,8 @@ export function timeAgo(date: Date | string): string {
   const d = typeof date === "string" ? new Date(date) : date;
   const seconds = Math.floor((Date.now() - d.getTime()) / 1000);
 
-  if (seconds < 60) return "agora";
-  if (seconds < 3600) return `${Math.floor(seconds / 60)}m atrás`;
-  if (seconds < 86400) return `${Math.floor(seconds / 3600)}h atrás`;
-  return `${Math.floor(seconds / 86400)}d atrás`;
+  if (seconds < 60) return "just now";
+  if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
+  if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
+  return `${Math.floor(seconds / 86400)}d ago`;
 }

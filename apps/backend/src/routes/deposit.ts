@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { getStellarAddress } from "../middleware/auth.js";
+import { mint, burn, type TokenSymbol } from "../services/tokens.js";
 import {
   buildBuyWidgetUrl,
   buildSellWidgetUrl,
@@ -11,10 +12,6 @@ import {
 
 const router = Router();
 
-/**
- * GET /api/deposit/config
- * Returns MoonPay publishable key and available methods.
- */
 router.get("/config", async (req, res) => {
   try {
     const country = (req.query.country as string) ?? "BR";
@@ -38,15 +35,6 @@ router.get("/config", async (req, res) => {
   }
 });
 
-/**
- * POST /api/deposit/buy-url
- * Generate a signed MoonPay buy (on-ramp) widget URL.
- * User selects PIX, SWIFT, card, etc. — this returns the signed URL
- * for the MoonPay widget to be embedded in an iframe or opened.
- *
- * Flow: User pays fiat (PIX/SWIFT) → MoonPay → USDC arrives on Stellar
- *       → CRE WF1 verifies reserves → nUSD minted to user
- */
 router.post("/buy-url", async (req, res) => {
   try {
     const { amount, fiatCurrency, paymentMethod, email } = req.body;
@@ -81,13 +69,6 @@ router.post("/buy-url", async (req, res) => {
   }
 });
 
-/**
- * POST /api/deposit/sell-url
- * Generate a signed MoonPay sell (off-ramp) widget URL.
- *
- * Flow: User burns nUSD → USDC sent to MoonPay → fiat via PIX/SWIFT
- *       → CRE WF1 updates reserves
- */
 router.post("/sell-url", async (req, res) => {
   try {
     const { amount, fiatCurrency, paymentMethod } = req.body;
@@ -118,11 +99,6 @@ router.post("/sell-url", async (req, res) => {
   }
 });
 
-/**
- * POST /api/deposit/webhook
- * MoonPay calls this when a transaction completes.
- * We verify signature, then trigger CRE PoR workflow and mint/burn nUSD.
- */
 router.post("/webhook", async (req, res) => {
   try {
     const signature = req.headers["moonpay-signature-v2"] as string;
@@ -137,46 +113,54 @@ router.post("/webhook", async (req, res) => {
     if (type === "transaction_updated" && data?.status === "completed") {
       const txId = data.externalTransactionId ?? data.id;
       const isBuy = txId?.startsWith("nexusfi-buy");
-      const amount = data.cryptoTransactionId
+      const cryptoAmount = data.cryptoTransactionId
         ? data.baseCurrencyAmount
         : data.quoteCurrencyAmount;
+      const walletAddress = data.walletAddress;
+      const fiat = (data.baseCurrencyCode ?? "usd").toUpperCase();
+      const symbol: TokenSymbol = fiat === "BRL" ? "nBRL" : "nUSD";
 
       console.log(
-        `MoonPay ${isBuy ? "BUY" : "SELL"} completed: ${amount} — tx: ${txId}`,
+        `MoonPay ${isBuy ? "BUY" : "SELL"} completed: ${cryptoAmount} ${symbol} — tx: ${txId}`,
       );
 
-      // In production:
-      // 1. Verify tx on Stellar Horizon
-      // 2. Trigger CRE WF1 (Proof of Reserve) to update attestation
-      // 3. Mint nUSD (buy) or burn nUSD (sell) via Soroban contract
+      if (walletAddress && cryptoAmount) {
+        if (isBuy) {
+          const { hash } = await mint(symbol, walletAddress, Number(cryptoAmount));
+          console.log(`Minted ${cryptoAmount} ${symbol} to ${walletAddress} — tx: ${hash}`);
+        } else {
+          const { hash } = await burn(symbol, walletAddress, Number(cryptoAmount));
+          console.log(`Burned ${cryptoAmount} ${symbol} from ${walletAddress} — tx: ${hash}`);
+        }
+      }
     }
 
     res.json({ received: true });
   } catch (err: any) {
+    console.error("MoonPay webhook error:", err);
     res.status(500).json({ error: err.message });
   }
 });
 
-/**
- * POST /api/deposit/mint (kept for demo/fallback)
- */
 router.post("/mint", async (req, res) => {
   try {
-    const { amount } = req.body;
+    const { amount, token } = req.body;
     if (!amount || amount <= 0) {
       return res.status(400).json({ error: "Invalid amount" });
     }
+
+    const symbol: TokenSymbol = token === "nBRL" ? "nBRL" : "nUSD";
     const address = getStellarAddress(req);
-    await new Promise((r) => setTimeout(r, 500));
+    const { hash, rawAmount } = await mint(symbol, address, Number(amount));
 
     res.json({
       success: true,
       address,
-      amountDeposited: amount,
-      nusdMinted: amount,
-      verifiedBy: "CRE Proof of Reserve Workflow",
-      provider: "MoonPay (simulated)",
-      txHash: `demo-mint-${Date.now().toString(36)}`,
+      token: symbol,
+      amountMinted: Number(amount),
+      rawAmount,
+      txHash: hash,
+      explorerUrl: `https://stellar.expert/explorer/testnet/tx/${hash}`,
       timestamp: new Date().toISOString(),
     });
   } catch (err: any) {
@@ -184,26 +168,25 @@ router.post("/mint", async (req, res) => {
   }
 });
 
-/**
- * POST /api/deposit/withdraw (kept for demo/fallback)
- */
 router.post("/withdraw", async (req, res) => {
   try {
-    const { amount } = req.body;
+    const { amount, token } = req.body;
     if (!amount || amount <= 0) {
       return res.status(400).json({ error: "Invalid amount" });
     }
+
+    const symbol: TokenSymbol = token === "nBRL" ? "nBRL" : "nUSD";
     const address = getStellarAddress(req);
-    await new Promise((r) => setTimeout(r, 500));
+    const { hash, rawAmount } = await burn(symbol, address, Number(amount));
 
     res.json({
       success: true,
       address,
-      nusdBurned: amount,
-      fiatReleased: amount,
-      verifiedBy: "CRE Proof of Reserve Workflow",
-      provider: "MoonPay (simulated)",
-      txHash: `demo-burn-${Date.now().toString(36)}`,
+      token: symbol,
+      amountBurned: Number(amount),
+      rawAmount,
+      txHash: hash,
+      explorerUrl: `https://stellar.expert/explorer/testnet/tx/${hash}`,
       timestamp: new Date().toISOString(),
     });
   } catch (err: any) {

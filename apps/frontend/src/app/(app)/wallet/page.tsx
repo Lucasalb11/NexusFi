@@ -11,43 +11,65 @@ import {
 import { QRCodeSVG } from "qrcode.react";
 import clsx from "clsx";
 import TransactionList from "@/components/TransactionList";
-import { MOCK_TRANSACTIONS, MOCK_ADDRESS } from "@/lib/mock-data";
-import { shortenAddress, formatCurrency } from "@/lib/format";
+import { MOCK_TRANSACTIONS } from "@/lib/mock-data";
+import { useWallet } from "@/context/WalletContext";
+import { shortenAddress } from "@/lib/format";
+import { api } from "@/lib/api";
 
 type Tab = "history" | "send" | "receive";
 
 export default function WalletPage() {
+  const { address } = useWallet();
+  const walletAddress = address ?? "";
+
   const [tab, setTab] = useState<Tab>("history");
   const [copied, setCopied] = useState(false);
   const [sendTo, setSendTo] = useState("");
   const [sendAmount, setSendAmount] = useState("");
+  const [sending, setSending] = useState(false);
+  const [sendResult, setSendResult] = useState<string | null>(null);
 
   const copyAddress = async () => {
-    await navigator.clipboard.writeText(MOCK_ADDRESS);
+    await navigator.clipboard.writeText(walletAddress);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleSend = (e: React.FormEvent) => {
+  const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
-    alert(`Demo: Would send ${formatCurrency(Number(sendAmount))} nUSD to ${sendTo}`);
-    setSendTo("");
-    setSendAmount("");
+    if (!sendTo || !sendAmount) return;
+
+    setSending(true);
+    setSendResult(null);
+    try {
+      const result = await api.post<{ txHash: string; explorerUrl: string }>("/api/wallet/send", {
+        to: sendTo,
+        amount: Number(sendAmount),
+        token: "nUSD",
+      });
+      setSendResult(result.txHash);
+      setSendTo("");
+      setSendAmount("");
+    } catch (err: any) {
+      setSendResult(`Error: ${err.message ?? "Failed to send"}`);
+    } finally {
+      setSending(false);
+    }
   };
 
   return (
     <div className="space-y-6 pt-6">
-      <h1 className="text-xl font-bold">Wallet</h1>
+      <h1 className="text-lg font-serif font-semibold">Wallet</h1>
 
-      <div className="flex gap-2 p-1 rounded-2xl bg-bg-card">
+      <div className="flex gap-1 p-1 rounded-xl bg-bg-card border border-border/20">
         {(["history", "send", "receive"] as Tab[]).map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
             className={clsx(
-              "flex-1 py-2.5 px-3 rounded-xl text-sm font-medium transition-all capitalize",
+              "flex-1 py-2.5 px-3 rounded-lg text-xs font-medium transition-all uppercase tracking-wider",
               tab === t
-                ? "bg-accent text-white shadow-lg"
+                ? "bg-accent text-bg-primary"
                 : "text-text-muted hover:text-text-secondary",
             )}
           >
@@ -60,12 +82,12 @@ export default function WalletPage() {
         {tab === "history" && (
           <motion.div
             key="history"
-            initial={{ opacity: 0, y: 10 }}
+            initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
+            exit={{ opacity: 0, y: -8 }}
           >
-            <div className="flex items-center gap-2 p-3 rounded-2xl bg-bg-card border border-border/30 mb-4">
-              <Search size={16} className="text-text-muted" />
+            <div className="flex items-center gap-2 p-3 rounded-xl bg-bg-card border border-border/20 mb-4">
+              <Search size={14} className="text-text-muted" />
               <input
                 type="text"
                 placeholder="Search transactions..."
@@ -79,14 +101,14 @@ export default function WalletPage() {
         {tab === "send" && (
           <motion.div
             key="send"
-            initial={{ opacity: 0, y: 10 }}
+            initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
+            exit={{ opacity: 0, y: -8 }}
           >
             <form onSubmit={handleSend} className="space-y-4">
-              <div className="glass rounded-2xl p-4 space-y-4">
+              <div className="glass rounded-xl p-4 space-y-4">
                 <div>
-                  <label className="text-xs text-text-muted uppercase tracking-wider block mb-2">
+                  <label className="text-[10px] text-text-muted uppercase tracking-widest block mb-2">
                     Recipient Address
                   </label>
                   <input
@@ -94,12 +116,12 @@ export default function WalletPage() {
                     value={sendTo}
                     onChange={(e) => setSendTo(e.target.value)}
                     placeholder="G..."
-                    className="w-full p-3 rounded-xl bg-bg-primary border border-border/50 text-sm font-mono focus:border-accent outline-none transition-colors"
+                    className="w-full p-3 rounded-lg bg-bg-primary border border-border/40 text-sm font-mono focus:border-accent/50 outline-none transition-colors"
                   />
                 </div>
 
                 <div>
-                  <label className="text-xs text-text-muted uppercase tracking-wider block mb-2">
+                  <label className="text-[10px] text-text-muted uppercase tracking-widest block mb-2">
                     Amount (nUSD)
                   </label>
                   <input
@@ -109,18 +131,48 @@ export default function WalletPage() {
                     placeholder="0.00"
                     step="0.01"
                     min="0"
-                    className="w-full p-3 rounded-xl bg-bg-primary border border-border/50 text-2xl font-bold focus:border-accent outline-none transition-colors tabular-nums"
+                    className="w-full p-3 rounded-lg bg-bg-primary border border-border/40 text-2xl font-semibold focus:border-accent/50 outline-none transition-colors tabular-nums"
                   />
                 </div>
               </div>
 
+              {sendResult && (
+                <div className={`p-3 rounded-lg text-xs font-mono break-all ${
+                  sendResult.startsWith("Error")
+                    ? "bg-danger/10 border border-danger/20 text-danger"
+                    : "bg-success/10 border border-success/20 text-success"
+                }`}>
+                  {sendResult.startsWith("Error")
+                    ? sendResult
+                    : (
+                      <>
+                        Sent successfully.{" "}
+                        <a
+                          href={`https://stellar.expert/explorer/testnet/tx/${sendResult}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="underline"
+                        >
+                          View on Explorer
+                        </a>
+                      </>
+                    )}
+                </div>
+              )}
+
               <button
                 type="submit"
-                disabled={!sendTo || !sendAmount}
-                className="w-full py-4 rounded-2xl gradient-accent text-white font-semibold flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"
+                disabled={!sendTo || !sendAmount || sending}
+                className="w-full py-4 rounded-xl bg-accent text-bg-primary font-semibold flex items-center justify-center gap-2 disabled:opacity-30 disabled:cursor-not-allowed transition-opacity text-sm tracking-wide"
               >
-                <ArrowUpRight size={18} />
-                Send nUSD
+                {sending ? (
+                  <span className="animate-pulse">Sending...</span>
+                ) : (
+                  <>
+                    <ArrowUpRight size={16} />
+                    Send nUSD
+                  </>
+                )}
               </button>
             </form>
           </motion.div>
@@ -129,39 +181,39 @@ export default function WalletPage() {
         {tab === "receive" && (
           <motion.div
             key="receive"
-            initial={{ opacity: 0, y: 10 }}
+            initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
+            exit={{ opacity: 0, y: -8 }}
             className="flex flex-col items-center space-y-4"
           >
-            <div className="glass rounded-3xl p-6">
-              <div className="bg-white rounded-2xl p-4">
+            <div className="glass rounded-2xl p-6">
+              <div className="bg-white rounded-xl p-4">
                 <QRCodeSVG
-                  value={MOCK_ADDRESS}
+                  value={walletAddress}
                   size={200}
                   level="H"
                   bgColor="#FFFFFF"
-                  fgColor="#0A0A0F"
+                  fgColor="#080C15"
                 />
               </div>
             </div>
 
             <button
               onClick={copyAddress}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl glass hover:bg-bg-elevated/80 transition-colors"
+              className="flex items-center gap-2 px-4 py-2.5 rounded-lg glass hover:bg-bg-elevated/80 transition-colors"
             >
               {copied ? (
-                <Check size={16} className="text-success" />
+                <Check size={14} className="text-success" />
               ) : (
-                <Copy size={16} className="text-text-muted" />
+                <Copy size={14} className="text-text-muted" />
               )}
               <span className="text-sm font-mono">
-                {shortenAddress(MOCK_ADDRESS, 8)}
+                {shortenAddress(walletAddress, 8)}
               </span>
             </button>
 
-            <p className="text-xs text-text-muted text-center max-w-xs">
-              Share this address to receive nUSD on the Stellar network
+            <p className="text-[11px] text-text-muted text-center max-w-xs tracking-wide">
+              Share this address to receive nUSD or nBRL on Stellar
             </p>
           </motion.div>
         )}

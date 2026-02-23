@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
   Brain,
@@ -9,18 +9,17 @@ import {
   TrendingUp,
   ChevronRight,
   Loader2,
-  Sparkles,
   BarChart3,
 } from "lucide-react";
 import CreditCardVisual from "@/components/CreditCardVisual";
 import CreditScoreGauge from "@/components/CreditScoreGauge";
-import { formatCurrency } from "@/lib/format";
+import { formatCurrency, shortenAddress } from "@/lib/format";
 import { api } from "@/lib/api";
+import { useWallet } from "@/context/WalletContext";
 import {
   MOCK_CREDIT_SCORE,
   MOCK_CREDIT_LIMIT,
   MOCK_CREDIT_USED,
-  MOCK_USER,
 } from "@/lib/mock-data";
 
 type ScoreResponse = {
@@ -38,11 +37,40 @@ type ScoreResponse = {
   track: string;
 };
 
+type CreditInfo = {
+  hasCredit: boolean;
+  limit: number;
+  used: number;
+  available: number;
+  interestRateBps: number;
+  scoreAtOpening: number;
+};
+
 export default function CreditPage() {
+  const { address } = useWallet();
   const [analyzing, setAnalyzing] = useState(false);
   const [score, setScore] = useState(MOCK_CREDIT_SCORE);
   const [reasoning, setReasoning] = useState<string | null>(null);
   const [factors, setFactors] = useState<ScoreResponse["factors"] | null>(null);
+  const [creditInfo, setCreditInfo] = useState<CreditInfo | null>(null);
+
+  const cardLastFour = address ? address.slice(-4) : "0000";
+  const cardName = address ? shortenAddress(address, 4).toUpperCase() : "NEXUSFI USER";
+
+  const creditLimit = creditInfo?.limit ?? MOCK_CREDIT_LIMIT;
+  const creditUsed = creditInfo?.used ?? MOCK_CREDIT_USED;
+  const available = creditLimit - creditUsed;
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const info = await api.get<CreditInfo>("/api/credit/info");
+        if (info.hasCredit) setCreditInfo(info);
+      } catch {
+        // fallback to mock
+      }
+    })();
+  }, []);
 
   const requestAnalysis = useCallback(async () => {
     setAnalyzing(true);
@@ -57,8 +85,6 @@ export default function CreditPage() {
       setAnalyzing(false);
     }
   }, [score]);
-
-  const available = MOCK_CREDIT_LIMIT - MOCK_CREDIT_USED;
 
   const factorsList = factors
     ? [
@@ -76,47 +102,46 @@ export default function CreditPage() {
   return (
     <div className="space-y-6 pt-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold">Credit</h1>
-        <div className="flex items-center gap-1.5 text-accent text-xs font-medium">
-          <Brain size={14} />
-          AI Powered
+        <h1 className="text-lg font-serif font-semibold">Credit</h1>
+        <div className="flex items-center gap-1.5 text-accent text-[11px] font-medium tracking-wider">
+          <Brain size={13} />
+          AI Assessment
         </div>
       </div>
 
       <CreditCardVisual
-        name={MOCK_USER.name}
-        lastFour={MOCK_USER.cardLastFour}
-        limit={MOCK_CREDIT_LIMIT}
-        used={MOCK_CREDIT_USED}
+        name={cardName}
+        lastFour={cardLastFour}
+        limit={creditLimit}
+        used={creditUsed}
       />
 
       <div className="grid grid-cols-3 gap-3">
-        <div className="glass rounded-2xl p-3 text-center">
-          <p className="text-[10px] text-text-muted uppercase tracking-wider">Limit</p>
-          <p className="text-sm font-bold mt-1">{formatCurrency(MOCK_CREDIT_LIMIT)}</p>
+        <div className="glass rounded-xl p-3 text-center">
+          <p className="text-[10px] text-text-muted uppercase tracking-widest">Limit</p>
+          <p className="text-sm font-semibold mt-1">{formatCurrency(creditLimit)}</p>
         </div>
-        <div className="glass rounded-2xl p-3 text-center">
-          <p className="text-[10px] text-text-muted uppercase tracking-wider">Used</p>
-          <p className="text-sm font-bold mt-1 text-warning">{formatCurrency(MOCK_CREDIT_USED)}</p>
+        <div className="glass rounded-xl p-3 text-center">
+          <p className="text-[10px] text-text-muted uppercase tracking-widest">Used</p>
+          <p className="text-sm font-semibold mt-1 text-warning">{formatCurrency(creditUsed)}</p>
         </div>
-        <div className="glass rounded-2xl p-3 text-center">
-          <p className="text-[10px] text-text-muted uppercase tracking-wider">Available</p>
-          <p className="text-sm font-bold mt-1 text-success">{formatCurrency(available)}</p>
+        <div className="glass rounded-xl p-3 text-center">
+          <p className="text-[10px] text-text-muted uppercase tracking-widest">Available</p>
+          <p className="text-sm font-semibold mt-1 text-success">{formatCurrency(available)}</p>
         </div>
       </div>
 
       <motion.div
-        initial={{ opacity: 0, y: 10 }}
+        initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2 }}
-        className="glass rounded-2xl p-6"
+        className="glass rounded-xl p-6"
       >
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-base font-semibold flex items-center gap-2">
-            <Sparkles size={16} className="text-accent" />
+          <h2 className="text-xs font-medium uppercase tracking-widest text-text-secondary">
             AI Credit Score
           </h2>
-          <span className="text-xs text-text-muted">via CRE + LLM</span>
+          <span className="text-[10px] text-text-muted tracking-wide">Chainlink CRE + LLM</span>
         </div>
 
         <CreditScoreGauge score={score} />
@@ -125,7 +150,7 @@ export default function CreditPage() {
           <motion.p
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="text-xs text-text-secondary mt-3 p-3 rounded-xl bg-bg-primary/50"
+            className="text-[11px] text-text-secondary mt-4 p-3 rounded-lg bg-bg-primary/50 border border-border/20 leading-relaxed"
           >
             {reasoning}
           </motion.p>
@@ -134,16 +159,16 @@ export default function CreditPage() {
         <button
           onClick={requestAnalysis}
           disabled={analyzing}
-          className="w-full mt-4 py-3 rounded-xl gradient-accent text-white text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-60 transition-opacity"
+          className="w-full mt-4 py-3 rounded-lg bg-accent text-bg-primary text-xs font-semibold flex items-center justify-center gap-2 disabled:opacity-50 transition-opacity uppercase tracking-wider"
         >
           {analyzing ? (
             <>
-              <Loader2 size={16} className="animate-spin" />
+              <Loader2 size={14} className="animate-spin" />
               Analyzing on-chain history...
             </>
           ) : (
             <>
-              <Brain size={16} />
+              <Brain size={14} />
               Re-analyze Credit Score
             </>
           )}
@@ -151,24 +176,28 @@ export default function CreditPage() {
       </motion.div>
 
       <motion.div
-        initial={{ opacity: 0, y: 10 }}
+        initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3 }}
         className="space-y-2"
       >
-        <h3 className="text-sm font-semibold text-text-secondary px-1">Score Factors</h3>
+        <h3 className="text-xs font-medium uppercase tracking-widest text-text-secondary px-1">
+          Score Factors
+        </h3>
         {factorsList.map(({ icon: Icon, label, value, impact }) => (
-          <div key={label} className="flex items-center gap-3 p-3 rounded-2xl glass">
-            <div className="w-9 h-9 rounded-xl bg-accent/10 flex items-center justify-center">
-              <Icon size={16} className="text-accent" />
+          <div key={label} className="flex items-center gap-3 p-3 rounded-xl glass">
+            <div className="w-8 h-8 rounded-lg border border-border/30 bg-bg-elevated flex items-center justify-center">
+              <Icon size={14} className="text-accent" />
             </div>
             <div className="flex-1">
               <p className="text-sm font-medium">{label}</p>
-              <p className="text-xs text-text-muted">{value}</p>
+              <p className="text-[11px] text-text-muted">{value}</p>
             </div>
             <div className="flex items-center gap-1">
-              <span className={`text-xs capitalize ${impact === "high" ? "text-success" : "text-warning"}`}>{impact}</span>
-              <ChevronRight size={14} className="text-text-muted" />
+              <span className={`text-[11px] capitalize tracking-wide ${impact === "high" ? "text-success" : "text-warning"}`}>
+                {impact}
+              </span>
+              <ChevronRight size={12} className="text-text-muted" />
             </div>
           </div>
         ))}

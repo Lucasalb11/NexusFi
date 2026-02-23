@@ -25,7 +25,7 @@ const TX_CONFIG = {
   receive: { icon: ArrowDownLeft, color: "text-success", sign: "+" },
   credit_use: { icon: CreditCard, color: "text-warning", sign: "-" },
   credit_repay: { icon: RefreshCw, color: "text-success", sign: "-" },
-  deposit: { icon: Zap, color: "text-accent-light", sign: "+" },
+  deposit: { icon: Zap, color: "text-accent", sign: "+" },
 } as const;
 
 type Props = {
@@ -45,32 +45,32 @@ export default function TransactionList({ transactions, limit }: Props) {
   }
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-1">
       {items.map((tx, i) => {
         const config = TX_CONFIG[tx.type];
         const Icon = config.icon;
         return (
           <motion.div
             key={tx.id}
-            initial={{ opacity: 0, x: -10 }}
+            initial={{ opacity: 0, x: -8 }}
             animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: i * 0.05 }}
-            className="flex items-center gap-3 p-3 rounded-2xl hover:bg-bg-card/50 transition-colors"
+            transition={{ delay: i * 0.04 }}
+            className="flex items-center gap-3 p-3 rounded-xl hover:bg-bg-card/40 transition-colors"
           >
             <div
               className={clsx(
-                "w-10 h-10 rounded-xl flex items-center justify-center",
-                "bg-bg-card border border-border/30",
+                "w-9 h-9 rounded-lg flex items-center justify-center",
+                "bg-bg-elevated/80 border border-border/20",
               )}
             >
-              <Icon size={18} className={config.color} />
+              <Icon size={16} className={config.color} />
             </div>
 
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium truncate">
                 {shortenAddress(tx.counterparty)}
               </p>
-              <p className="text-xs text-text-muted">
+              <p className="text-[11px] text-text-muted">
                 {timeAgo(tx.timestamp)}
                 {tx.status === "pending" && (
                   <span className="ml-1 text-warning">pending</span>

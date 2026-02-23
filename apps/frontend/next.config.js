@@ -10,7 +10,12 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  transpilePackages: [],
+  transpilePackages: [
+    "passkey-kit",
+    "passkey-factory-sdk",
+    "passkey-kit-sdk",
+    "sac-sdk",
+  ],
   async headers() {
     return [
       {

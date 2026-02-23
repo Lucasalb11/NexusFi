@@ -30,16 +30,16 @@ const PAYMENT_METHODS: {
   description: string;
   icon: typeof QrCode;
   fiat: string;
-  flag: string;
+  region: string;
   processingTime: string;
 }[] = [
   {
     id: "pix",
     label: "PIX",
-    description: "Instant transfer (Brazil)",
+    description: "Instant transfer",
     icon: QrCode,
     fiat: "BRL",
-    flag: "🇧🇷",
+    region: "Brazil",
     processingTime: "~1 min",
   },
   {
@@ -48,8 +48,8 @@ const PAYMENT_METHODS: {
     description: "International bank transfer",
     icon: Building2,
     fiat: "USD",
-    flag: "🌍",
-    processingTime: "1-3 days",
+    region: "Global",
+    processingTime: "1–3 days",
   },
   {
     id: "card",
@@ -57,7 +57,7 @@ const PAYMENT_METHODS: {
     description: "Visa / Mastercard",
     icon: CreditCard,
     fiat: "USD",
-    flag: "💳",
+    region: "Global",
     processingTime: "~5 min",
   },
   {
@@ -66,8 +66,8 @@ const PAYMENT_METHODS: {
     description: "EU bank transfer",
     icon: Globe,
     fiat: "EUR",
-    flag: "🇪🇺",
-    processingTime: "1-2 days",
+    region: "Europe",
+    processingTime: "1–2 days",
   },
 ];
 
@@ -129,7 +129,6 @@ export default function DepositPage() {
       setTxHash(result.externalTransactionId);
       setStep("moonpay");
     } catch {
-      // Demo fallback: skip to processing
       setTxHash(`nexusfi-${mode}-${Date.now().toString(36)}`);
       setStep("processing");
       setTimeout(() => setStep("done"), 2500);
@@ -143,7 +142,6 @@ export default function DepositPage() {
     setTimeout(() => setStep("done"), 2000);
   };
 
-  // Listen for MoonPay iframe postMessage events
   useEffect(() => {
     const handler = (event: MessageEvent) => {
       if (event.data?.type === "moonpay_event") {
@@ -159,51 +157,50 @@ export default function DepositPage() {
   return (
     <div className="space-y-6 pt-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold">
+        <h1 className="text-lg font-serif font-semibold">
           {mode === "deposit" ? "Deposit" : "Withdraw"}
         </h1>
         {step !== "method" && step !== "moonpay" && (
           <button
             onClick={reset}
-            className="text-xs text-text-muted hover:text-text-secondary"
+            className="text-[11px] text-text-muted hover:text-text-secondary tracking-wide"
           >
             Cancel
           </button>
         )}
       </div>
 
-      <div className="flex gap-2 p-1 rounded-2xl bg-bg-card">
+      <div className="flex gap-1 p-1 rounded-xl bg-bg-card border border-border/20">
         {(["deposit", "withdraw"] as Mode[]).map((m) => (
           <button
             key={m}
             onClick={() => { setMode(m); reset(); }}
             className={clsx(
-              "flex-1 py-2.5 px-3 rounded-xl text-sm font-medium transition-all flex items-center justify-center gap-2",
+              "flex-1 py-2.5 px-3 rounded-lg text-xs font-medium transition-all flex items-center justify-center gap-2 uppercase tracking-wider",
               mode === m
-                ? "bg-accent text-white shadow-lg"
+                ? "bg-accent text-bg-primary"
                 : "text-text-muted hover:text-text-secondary",
             )}
           >
-            {m === "deposit" ? <ArrowDownToLine size={16} /> : <ArrowUpFromLine size={16} />}
+            {m === "deposit" ? <ArrowDownToLine size={14} /> : <ArrowUpFromLine size={14} />}
             {m === "deposit" ? "Deposit" : "Withdraw"}
           </button>
         ))}
       </div>
 
       <AnimatePresence mode="wait">
-        {/* Step 1: Payment Method Selection */}
         {step === "method" && (
           <motion.div
             key="method"
-            initial={{ opacity: 0, y: 10 }}
+            initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
+            exit={{ opacity: 0, y: -8 }}
             className="space-y-3"
           >
-            <p className="text-sm text-text-secondary">
+            <p className="text-xs text-text-secondary tracking-wide">
               {mode === "deposit"
-                ? "Choose how to add funds via MoonPay"
-                : "Choose how to receive your fiat"}
+                ? "Select a payment method to add funds"
+                : "Select how to receive your fiat"}
             </p>
 
             {PAYMENT_METHODS.map((method) => {
@@ -212,75 +209,63 @@ export default function DepositPage() {
                 <button
                   key={method.id}
                   onClick={() => handleMethodSelect(method.id)}
-                  className="w-full flex items-center gap-4 p-4 rounded-2xl glass hover:bg-bg-elevated/60 transition-all text-left group"
+                  className="w-full flex items-center gap-4 p-4 rounded-xl glass hover:bg-bg-elevated/40 transition-all text-left group"
                 >
-                  <div className="w-12 h-12 rounded-xl bg-accent/10 flex items-center justify-center shrink-0">
-                    <Icon size={22} className="text-accent" />
+                  <div className="w-10 h-10 rounded-lg border border-border/30 bg-bg-elevated flex items-center justify-center shrink-0">
+                    <Icon size={18} className="text-accent" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="font-semibold text-sm">{method.label}</span>
-                      <span className="text-sm">{method.flag}</span>
-                    </div>
-                    <p className="text-xs text-text-muted">{method.description}</p>
+                    <p className="font-medium text-sm">{method.label}</p>
+                    <p className="text-[11px] text-text-muted tracking-wide">
+                      {method.description} — {method.region}
+                    </p>
                     <p className="text-[10px] text-text-muted mt-0.5">
                       {method.fiat} — {method.processingTime}
                     </p>
                   </div>
-                  <ChevronRight size={16} className="text-text-muted group-hover:text-accent transition-colors" />
+                  <ChevronRight size={14} className="text-text-muted group-hover:text-accent transition-colors" />
                 </button>
               );
             })}
 
-            <div className="flex items-center justify-center gap-2 pt-2">
-              <img
-                src="https://www.moonpay.com/assets/logo-full-white.svg"
-                alt="MoonPay"
-                className="h-4 opacity-40"
-                onError={(e) => {
-                  (e.target as HTMLImageElement).style.display = "none";
-                }}
-              />
-              <span className="text-[10px] text-text-muted">
-                Powered by MoonPay — USDC on Stellar
-              </span>
-            </div>
+            <p className="text-center text-[10px] text-text-muted pt-2 tracking-wider">
+              Powered by MoonPay — USDC on Stellar
+            </p>
           </motion.div>
         )}
 
-        {/* Step 2: Amount Input */}
         {step === "amount" && currentMethod && (
           <motion.form
             key="amount"
-            initial={{ opacity: 0, y: 10 }}
+            initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
+            exit={{ opacity: 0, y: -8 }}
             onSubmit={handleAmountSubmit}
             className="space-y-4"
           >
-            <div className="flex items-center gap-3 p-3 rounded-xl bg-bg-card/50">
-              <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center">
-                {(() => { const I = currentMethod.icon; return <I size={16} className="text-accent" />; })()}
+            <div className="flex items-center gap-3 p-3 rounded-lg bg-bg-card/50 border border-border/20">
+              <div className="w-7 h-7 rounded-md border border-border/30 bg-bg-elevated flex items-center justify-center">
+                {(() => { const I = currentMethod.icon; return <I size={14} className="text-accent" />; })()}
               </div>
               <div>
-                <p className="text-sm font-medium">{currentMethod.label} {currentMethod.flag}</p>
+                <p className="text-sm font-medium">{currentMethod.label}</p>
                 <p className="text-[10px] text-text-muted">{currentMethod.processingTime}</p>
               </div>
               <button
                 type="button"
                 onClick={() => setStep("method")}
-                className="ml-auto text-xs text-accent"
+                className="ml-auto text-[11px] text-accent tracking-wide"
               >
                 Change
               </button>
             </div>
 
-            <div className="glass rounded-2xl p-6">
-              <label className="text-xs text-text-muted uppercase tracking-wider block mb-3">
+            <div className="glass rounded-xl p-6">
+              <label className="text-[10px] text-text-muted uppercase tracking-widest block mb-3">
                 Amount ({fiat})
               </label>
               <div className="flex items-baseline gap-2">
-                <span className="text-2xl font-bold text-text-muted">
+                <span className="text-xl font-semibold text-text-muted">
                   {fiatSymbol[fiat] ?? "$"}
                 </span>
                 <input
@@ -291,7 +276,7 @@ export default function DepositPage() {
                   step="0.01"
                   min="0"
                   autoFocus
-                  className="w-full text-4xl font-bold outline-none tabular-nums placeholder:text-text-muted/30"
+                  className="w-full text-3xl font-semibold outline-none tabular-nums placeholder:text-text-muted/20"
                 />
               </div>
               <div className="flex gap-2 mt-4">
@@ -301,10 +286,10 @@ export default function DepositPage() {
                     type="button"
                     onClick={() => setAmount(String(preset))}
                     className={clsx(
-                      "flex-1 py-2 rounded-xl text-sm font-medium transition-all",
+                      "flex-1 py-2 rounded-lg text-xs font-medium transition-all tracking-wide",
                       amount === String(preset)
-                        ? "bg-accent text-white"
-                        : "bg-bg-primary text-text-secondary hover:bg-bg-elevated",
+                        ? "bg-accent text-bg-primary"
+                        : "bg-bg-primary text-text-secondary border border-border/20 hover:border-accent/30",
                     )}
                   >
                     {fiatSymbol[fiat]}{preset}
@@ -313,41 +298,39 @@ export default function DepositPage() {
               </div>
             </div>
 
-            <div className="glass rounded-2xl p-4 space-y-2">
+            <div className="glass rounded-xl p-4 space-y-2.5">
               <div className="flex items-center gap-2 text-sm">
-                <Zap size={14} className="text-accent" />
-                <span className="text-text-secondary">
+                <Zap size={13} className="text-accent" />
+                <span className="text-text-secondary text-xs">
                   {mode === "deposit" ? "You will receive" : "You will sell"}
                 </span>
-                <span className="ml-auto font-semibold">
-                  USDC on Stellar
-                </span>
+                <span className="ml-auto text-xs font-semibold">USDC on Stellar</span>
               </div>
               <div className="flex items-center gap-2 text-sm">
-                <Shield size={14} className="text-success" />
-                <span className="text-text-secondary">Reserve verified by</span>
-                <span className="ml-auto text-accent font-medium">Chainlink CRE</span>
+                <Shield size={13} className="text-success" />
+                <span className="text-text-secondary text-xs">Reserve verified by</span>
+                <span className="ml-auto text-accent text-xs font-medium">Chainlink CRE</span>
               </div>
               <div className="flex items-center gap-2 text-sm">
-                <Building2 size={14} className="text-text-muted" />
-                <span className="text-text-secondary">Provider</span>
-                <span className="ml-auto text-text-primary font-medium">MoonPay</span>
+                <Building2 size={13} className="text-text-muted" />
+                <span className="text-text-secondary text-xs">Provider</span>
+                <span className="ml-auto text-xs font-medium">MoonPay</span>
               </div>
             </div>
 
             <button
               type="submit"
               disabled={!amount || Number(amount) <= 0 || loading}
-              className="w-full py-4 rounded-2xl gradient-accent text-white font-semibold flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"
+              className="w-full py-4 rounded-xl bg-accent text-bg-primary font-semibold flex items-center justify-center gap-2 disabled:opacity-30 disabled:cursor-not-allowed transition-opacity text-sm tracking-wide"
             >
               {loading ? (
                 <>
-                  <Loader2 size={18} className="animate-spin" />
+                  <Loader2 size={16} className="animate-spin" />
                   Preparing...
                 </>
               ) : (
                 <>
-                  <ExternalLink size={18} />
+                  <ExternalLink size={16} />
                   Continue to MoonPay
                 </>
               )}
@@ -355,26 +338,25 @@ export default function DepositPage() {
           </motion.form>
         )}
 
-        {/* Step 3: MoonPay Widget (iframe) */}
         {step === "moonpay" && widgetUrl && (
           <motion.div
             key="moonpay"
-            initial={{ opacity: 0, scale: 0.95 }}
+            initial={{ opacity: 0, scale: 0.98 }}
             animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.95 }}
+            exit={{ opacity: 0, scale: 0.98 }}
             className="space-y-3"
           >
             <div className="flex items-center justify-between">
-              <p className="text-sm text-text-secondary">Complete payment via MoonPay</p>
+              <p className="text-xs text-text-secondary tracking-wide">Complete payment via MoonPay</p>
               <button
                 onClick={reset}
                 className="p-1.5 rounded-lg hover:bg-white/5 transition-colors"
               >
-                <X size={16} className="text-text-muted" />
+                <X size={14} className="text-text-muted" />
               </button>
             </div>
 
-            <div className="rounded-2xl overflow-hidden border border-border/30 bg-bg-card">
+            <div className="rounded-xl overflow-hidden border border-border/20 bg-bg-card">
               <iframe
                 src={widgetUrl}
                 title="MoonPay"
@@ -386,43 +368,41 @@ export default function DepositPage() {
 
             <button
               onClick={handleMoonPayComplete}
-              className="w-full py-3 rounded-xl glass text-sm font-medium hover:bg-bg-elevated/80 transition-colors flex items-center justify-center gap-2"
+              className="w-full py-3 rounded-lg glass text-xs font-medium hover:bg-bg-elevated/60 transition-colors flex items-center justify-center gap-2 tracking-wide"
             >
-              <CheckCircle2 size={16} className="text-success" />
+              <CheckCircle2 size={14} className="text-success" />
               I completed the payment
             </button>
           </motion.div>
         )}
 
-        {/* Step 4: Processing */}
         {step === "processing" && (
           <motion.div
             key="processing"
-            initial={{ opacity: 0, scale: 0.95 }}
+            initial={{ opacity: 0, scale: 0.98 }}
             animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.95 }}
+            exit={{ opacity: 0, scale: 0.98 }}
             className="flex flex-col items-center justify-center py-16 space-y-4"
           >
             <motion.div
               animate={{ rotate: 360 }}
-              transition={{ repeat: Infinity, duration: 1.5, ease: "linear" }}
+              transition={{ repeat: Infinity, duration: 2, ease: "linear" }}
             >
-              <Loader2 size={48} className="text-accent" />
+              <Loader2 size={40} className="text-accent" />
             </motion.div>
-            <p className="text-lg font-semibold">Processing...</p>
-            <p className="text-sm text-text-muted text-center max-w-xs">
+            <p className="text-base font-serif font-semibold">Processing</p>
+            <p className="text-xs text-text-muted text-center max-w-xs leading-relaxed tracking-wide">
               {mode === "deposit"
-                ? "MoonPay is processing your payment. CRE will verify reserves and mint nUSD."
-                : "Burning nUSD and releasing fiat via MoonPay off-ramp."}
+                ? "Verifying reserves via Chainlink CRE and minting stablecoins."
+                : "Burning stablecoins and processing fiat release."}
             </p>
           </motion.div>
         )}
 
-        {/* Step 5: Done */}
         {step === "done" && (
           <motion.div
             key="done"
-            initial={{ opacity: 0, scale: 0.9 }}
+            initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             className="flex flex-col items-center justify-center py-16 space-y-4"
           >
@@ -431,24 +411,24 @@ export default function DepositPage() {
               animate={{ scale: 1 }}
               transition={{ type: "spring", stiffness: 200, damping: 15 }}
             >
-              <CheckCircle2 size={64} className="text-success" />
+              <CheckCircle2 size={56} className="text-success" />
             </motion.div>
-            <p className="text-lg font-semibold">
-              {mode === "deposit" ? "Deposit Submitted!" : "Withdrawal Submitted!"}
+            <p className="text-base font-serif font-semibold">
+              {mode === "deposit" ? "Deposit Confirmed" : "Withdrawal Confirmed"}
             </p>
-            <p className="text-sm text-text-muted text-center max-w-xs">
+            <p className="text-xs text-text-muted text-center max-w-xs leading-relaxed tracking-wide">
               {mode === "deposit"
-                ? `Your ${currentMethod?.label ?? ""} payment is being processed. USDC will arrive on Stellar and nUSD will be minted.`
-                : `nUSD burned. Fiat will be sent to your ${currentMethod?.label ?? ""} account.`}
+                ? `Your ${currentMethod?.label ?? ""} payment has been processed. Stablecoins minted to your wallet.`
+                : `Stablecoins burned. Fiat will be sent to your ${currentMethod?.label ?? ""} account.`}
             </p>
             {txHash && (
-              <p className="text-xs text-text-muted font-mono break-all px-4">
+              <p className="text-[10px] text-text-muted font-mono break-all px-4">
                 Ref: {txHash}
               </p>
             )}
             <button
               onClick={reset}
-              className="mt-4 px-6 py-3 rounded-xl glass text-sm font-medium hover:bg-bg-elevated/80 transition-colors"
+              className="mt-4 px-6 py-3 rounded-lg glass text-xs font-medium hover:bg-bg-elevated/60 transition-colors tracking-wide"
             >
               {mode === "deposit" ? "Make Another Deposit" : "Withdraw More"}
             </button>

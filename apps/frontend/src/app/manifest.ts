@@ -8,8 +8,8 @@ export default function manifest(): MetadataRoute.Manifest {
       "A decentralized fintech powered by Stellar and Chainlink CRE",
     start_url: "/dashboard",
     display: "standalone",
-    background_color: "#0A0A0F",
-    theme_color: "#8B5CF6",
+    background_color: "#080C15",
+    theme_color: "#BFA36B",
     orientation: "portrait",
     icons: [
       {

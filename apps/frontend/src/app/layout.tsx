@@ -1,9 +1,10 @@
 import type { Metadata, Viewport } from "next";
+import { WalletProvider } from "@/context/WalletContext";
 import "./globals.css";
 
 export const metadata: Metadata = {
   title: "NexusFi",
-  description: "NexusFi — Decentralized Finance on Stellar",
+  description: "NexusFi — Institutional-Grade Decentralized Finance",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
@@ -20,7 +21,7 @@ export const viewport: Viewport = {
   maximumScale: 1,
   userScalable: false,
   viewportFit: "cover",
-  themeColor: "#8B5CF6",
+  themeColor: "#080C15",
 };
 
 function ServiceWorkerRegistration() {
@@ -45,7 +46,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="pt-BR">
+    <html lang="en">
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link
@@ -54,14 +55,16 @@ export default function RootLayout({
           crossOrigin="anonymous"
         />
         <link
-          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap"
           rel="stylesheet"
         />
         <link rel="apple-touch-icon" href="/icons/icon-192.png" />
         <ServiceWorkerRegistration />
       </head>
       <body className="min-h-screen">
-        {children}
+        <WalletProvider>
+          {children}
+        </WalletProvider>
       </body>
     </html>
   );

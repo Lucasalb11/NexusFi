@@ -10,10 +10,12 @@
     "clean": "rm -rf .next out"
   },
   "dependencies": {
+    "@stellar/freighter-api": "^6.0.1",
     "clsx": "^2.1.1",
     "framer-motion": "^12.34.3",
     "lucide-react": "^0.575.0",
     "next": "^14.2.0",
+    "passkey-kit": "^0.12.0",
     "qrcode.react": "^4.2.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"

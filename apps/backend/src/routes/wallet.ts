@@ -5,6 +5,12 @@ import {
   getAccountBalance,
   fundTestnetAccount,
 } from "../services/stellar.js";
+import {
+  getAllBalances,
+  transfer,
+  getAllTokens,
+  type TokenSymbol,
+} from "../services/tokens.js";
 import { getStellarAddress } from "../middleware/auth.js";
 
 const router = Router();
@@ -12,8 +18,16 @@ const router = Router();
 router.get("/balance", async (req, res) => {
   try {
     const address = getStellarAddress(req);
-    const balance = await getAccountBalance(address);
-    res.json({ address, balance, token: "nUSD" });
+    const xlm = await getAccountBalance(address);
+    const tokens = await getAllBalances(address);
+    const available = getAllTokens().map((t) => ({
+      symbol: t.symbol,
+      name: t.name,
+      contractId: t.contractId,
+      fiatCurrency: t.fiatCurrency,
+    }));
+
+    res.json({ address, xlm, tokens, available });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
@@ -45,19 +59,25 @@ router.get("/transactions", async (req, res) => {
 
 router.post("/send", async (req, res) => {
   try {
-    const { to, amount } = req.body;
+    const { to, amount, token } = req.body;
     if (!to || !amount) {
       return res.status(400).json({ error: "Missing 'to' or 'amount'" });
     }
 
-    // Demo: simulate successful transfer
+    const symbol: TokenSymbol = token === "nBRL" ? "nBRL" : "nUSD";
+    const from = getStellarAddress(req);
+
+    const { hash, rawAmount } = await transfer(symbol, from, to, Number(amount));
+
     res.json({
       success: true,
-      txHash: `demo-tx-${Date.now().toString(36)}`,
-      from: getStellarAddress(req),
+      txHash: hash,
+      from,
       to,
-      amount,
-      token: "nUSD",
+      amount: Number(amount),
+      rawAmount,
+      token: symbol,
+      explorerUrl: `https://stellar.expert/explorer/testnet/tx/${hash}`,
       timestamp: new Date().toISOString(),
     });
   } catch (err: any) {
