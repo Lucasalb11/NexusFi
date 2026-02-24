@@ -9,7 +9,7 @@ import {
 } from "../services/bridge.js";
 import type { TokenSymbol } from "../services/tokens.js";
 
-const router = Router();
+const router: Router = Router();
 
 router.get("/chains", async (_req, res) => {
   try {

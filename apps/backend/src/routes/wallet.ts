@@ -13,7 +13,7 @@ import {
 } from "../services/tokens.js";
 import { getStellarAddress } from "../middleware/auth.js";
 
-const router = Router();
+const router: Router = Router();
 
 router.get("/balance", async (req, res) => {
   try {

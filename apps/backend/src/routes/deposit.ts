@@ -10,7 +10,7 @@ import {
   type PaymentMethod,
 } from "../services/moonpay.js";
 
-const router = Router();
+const router: Router = Router();
 
 router.get("/config", async (req, res) => {
   try {

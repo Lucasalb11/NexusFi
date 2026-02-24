@@ -7,7 +7,7 @@ import {
 } from "../services/cre-bridge.js";
 import { getStellarAddress } from "../middleware/auth.js";
 
-const router = Router();
+const router: Router = Router();
 
 router.get("/status", async (_req, res) => {
   try {

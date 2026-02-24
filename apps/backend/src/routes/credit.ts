@@ -4,7 +4,7 @@ import { invokeContractReadNative, invokeContractWrite, scVal } from "../service
 import { getStellarAddress } from "../middleware/auth.js";
 import crypto from "crypto";
 
-const router = Router();
+const router: Router = Router();
 
 const CREDIT_SCORE_CONTRACT = process.env.CREDIT_SCORE_CONTRACT_ID;
 const CREDIT_LINE_CONTRACT = process.env.CREDIT_LINE_CONTRACT_ID;

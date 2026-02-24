@@ -7,6 +7,9 @@
  * Private keys belong in the backend only.
  */
 
+const path = require("path");
+const webpack = require("webpack");
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
@@ -16,6 +19,17 @@ const nextConfig = {
     "passkey-kit-sdk",
     "sac-sdk",
   ],
+  webpack: (config) => {
+    // Replace @stellar/stellar-sdk lib/minimal/bindings/config.js (requires
+    // '../../package.json' which breaks in webpack) with our stub.
+    config.plugins.push(
+      new webpack.NormalModuleReplacementPlugin(
+        /[\\/]@stellar[\\/]stellar-sdk[\\/]lib[\\/]minimal[\\/]bindings[\\/]config\.js$/,
+        path.join(__dirname, "stellar-sdk-config-stub.js")
+      )
+    );
+    return config;
+  },
   async headers() {
     return [
       {
