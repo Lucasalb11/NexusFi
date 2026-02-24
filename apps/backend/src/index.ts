@@ -13,6 +13,7 @@
 import "dotenv/config";
 import express from "express";
 import cors from "cors";
+import session from "express-session";
 import { env } from "./lib/validate-env.js";
 import { demoAuth } from "./middleware/auth.js";
 import walletRoutes from "./routes/wallet.js";
@@ -46,9 +47,23 @@ app.use(
             }
           },
     methods: ["GET", "POST"],
+    credentials: true,
   }),
 );
 app.use(express.json());
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET ?? "nexusfi-dev-secret-change-in-production",
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    },
+  }),
+);
 app.use(demoAuth);
 
 app.get("/health", (_req, res) => {

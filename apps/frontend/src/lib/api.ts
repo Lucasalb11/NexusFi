@@ -39,6 +39,7 @@ async function request<T>(path: string, opts: RequestOptions = {}): Promise<T> {
 
   const res = await fetch(`${API_BASE}${path}`, {
     method,
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
       ...headers,

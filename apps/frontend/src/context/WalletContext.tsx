@@ -11,27 +11,41 @@ import {
 } from "react";
 import { api } from "@/lib/api";
 
+export type WalletEntry = {
+  keyId: string;
+  contractId: string;
+  createdAt: string;
+};
+
 type WalletState = {
   address: string | null;
   keyId: string | null;
+  wallets: WalletEntry[];
   network: string;
   isConnected: boolean;
   isLoading: boolean;
   error: string | null;
   createAccount: (username: string) => Promise<string | null>;
   signIn: () => Promise<string | null>;
+  addWallet: (username: string) => Promise<string | null>;
+  setActiveWallet: (contractId: string) => void;
+  refreshWallets: () => Promise<void>;
   disconnect: () => void;
 };
 
 const WalletContext = createContext<WalletState>({
   address: null,
   keyId: null,
+  wallets: [],
   network: "TESTNET",
   isConnected: false,
   isLoading: false,
   error: null,
   createAccount: async () => null,
   signIn: async () => null,
+  addWallet: async () => null,
+  setActiveWallet: () => {},
+  refreshWallets: async () => {},
   disconnect: () => {},
 });
 
@@ -56,9 +70,35 @@ async function getPasskeyKit() {
 export function WalletProvider({ children }: { children: ReactNode }) {
   const [address, setAddress] = useState<string | null>(null);
   const [keyId, setKeyId] = useState<string | null>(null);
+  const [wallets, setWallets] = useState<WalletEntry[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const kitRef = useRef<any>(null);
+
+  const refreshWallets = useCallback(async () => {
+    try {
+      const data = await api.get<{ wallets: WalletEntry[] }>("/api/passkey/wallets");
+      setWallets(data.wallets ?? []);
+    } catch {
+      setWallets([]);
+    }
+  }, []);
+
+  const persist = useCallback((addr: string, kid: string) => {
+    setAddress(addr);
+    setKeyId(kid);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ address: addr, keyId: kid }));
+  }, []);
+
+  const setActiveWallet = useCallback(
+    (contractId: string) => {
+      const entry = wallets.find((w) => w.contractId === contractId);
+      if (entry) {
+        persist(entry.contractId, entry.keyId);
+      }
+    },
+    [wallets, persist]
+  );
 
   useEffect(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
@@ -73,11 +113,9 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const persist = useCallback((addr: string, kid: string) => {
-    setAddress(addr);
-    setKeyId(kid);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ address: addr, keyId: kid }));
-  }, []);
+  useEffect(() => {
+    if (address) refreshWallets();
+  }, [address, refreshWallets]);
 
   const createAccount = useCallback(async (username: string): Promise<string | null> => {
     setIsLoading(true);
@@ -113,6 +151,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         contractId,
       });
       persist(contractId, keyIdBase64);
+      await refreshWallets();
       setIsLoading(false);
       return contractId;
     } catch (err: any) {
@@ -124,7 +163,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       setIsLoading(false);
       return null;
     }
-  }, [persist]);
+  }, [persist, refreshWallets]);
 
   const signIn = useCallback(async (): Promise<string | null> => {
     setIsLoading(true);
@@ -146,6 +185,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       });
 
       persist(contractId, keyIdBase64);
+      await refreshWallets();
       setIsLoading(false);
       return contractId;
     } catch (err: any) {
@@ -155,11 +195,65 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       setIsLoading(false);
       return null;
     }
-  }, [persist]);
+  }, [persist, refreshWallets]);
 
-  const disconnect = useCallback(() => {
+  const addWallet = useCallback(async (username: string): Promise<string | null> => {
+    setIsLoading(true);
+    setError(null);
+
+    let keyIdBase64: string;
+    let contractId: string;
+    let signedTx: { toXDR: () => string };
+
+    try {
+      const kit = await getPasskeyKit();
+      kitRef.current = kit;
+
+      const result = await kit.createWallet("NexusFi", username);
+      keyIdBase64 = result.keyIdBase64;
+      contractId = result.contractId;
+      signedTx = result.signedTx;
+    } catch (err: any) {
+      const msg = err?.message ?? "Failed to create wallet";
+      console.error("Passkey add wallet error:", msg);
+      setError(
+        "Falha ao criar passkey ou ao conectar na rede Stellar. Verifique sua conexão."
+      );
+      setIsLoading(false);
+      return null;
+    }
+
+    try {
+      const xdr = signedTx.toXDR();
+      await api.post("/api/passkey/submit", { xdr });
+      await api.post("/api/passkey/register", {
+        keyId: keyIdBase64,
+        contractId,
+      });
+      persist(contractId, keyIdBase64);
+      await refreshWallets();
+      setIsLoading(false);
+      return contractId;
+    } catch (err: any) {
+      const msg = err?.message ?? "Failed to add wallet";
+      console.error("Passkey submit/register error:", msg);
+      setError(
+        "Falha ao comunicar com o servidor. Verifique se o backend está rodando."
+      );
+      setIsLoading(false);
+      return null;
+    }
+  }, [persist, refreshWallets]);
+
+  const disconnect = useCallback(async () => {
+    try {
+      await api.post("/api/passkey/logout", {});
+    } catch {
+      // ignore
+    }
     setAddress(null);
     setKeyId(null);
+    setWallets([]);
     setError(null);
     kitRef.current = null;
     localStorage.removeItem(STORAGE_KEY);
@@ -170,12 +264,16 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       value={{
         address,
         keyId,
+        wallets,
         network: "TESTNET",
         isConnected: !!address,
         isLoading,
         error,
         createAccount,
         signIn,
+        addWallet,
+        setActiveWallet,
+        refreshWallets,
         disconnect,
       }}
     >
