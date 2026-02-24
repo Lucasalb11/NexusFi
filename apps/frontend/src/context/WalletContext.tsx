@@ -83,31 +83,44 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     setIsLoading(true);
     setError(null);
 
+    let keyIdBase64: string;
+    let contractId: string;
+    let signedTx: { toXDR: () => string };
+
     try {
       const kit = await getPasskeyKit();
       kitRef.current = kit;
 
-      const { keyIdBase64, contractId, signedTx } = await kit.createWallet(
-        "NexusFi",
-        username,
+      const result = await kit.createWallet("NexusFi", username);
+      keyIdBase64 = result.keyIdBase64;
+      contractId = result.contractId;
+      signedTx = result.signedTx;
+    } catch (err: any) {
+      const msg = err?.message ?? "Failed to create account";
+      console.error("Passkey create error:", msg);
+      setError(
+        "Falha ao criar passkey ou ao conectar na rede Stellar. Verifique sua conexão."
       );
+      setIsLoading(false);
+      return null;
+    }
 
+    try {
       const xdr = signedTx.toXDR();
-
       await api.post("/api/passkey/submit", { xdr });
-
       await api.post("/api/passkey/register", {
         keyId: keyIdBase64,
         contractId,
       });
-
       persist(contractId, keyIdBase64);
       setIsLoading(false);
       return contractId;
     } catch (err: any) {
       const msg = err?.message ?? "Failed to create account";
-      console.error("Passkey create error:", msg);
-      setError(msg);
+      console.error("Passkey submit/register error:", msg);
+      setError(
+        "Falha ao comunicar com o servidor. Verifique se o backend está rodando e se a URL da API está correta."
+      );
       setIsLoading(false);
       return null;
     }

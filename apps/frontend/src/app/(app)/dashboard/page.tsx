@@ -13,6 +13,7 @@ import {
 import Link from "next/link";
 import { useState, useEffect, useCallback } from "react";
 import BalanceCard from "@/components/BalanceCard";
+import AssetList from "@/components/AssetList";
 import TransactionList from "@/components/TransactionList";
 import {
   MOCK_CHANGE_24H,
@@ -39,8 +40,14 @@ type RiskData = {
 };
 
 type BalanceData = {
-  xlm: number;
-  tokens: Record<string, number>;
+  xlm: string;
+  tokens: Record<string, { raw: string; formatted: string }>;
+  available?: Array<{
+    symbol: string;
+    name: string;
+    contractId: string;
+    fiatCurrency: string;
+  }>;
 };
 
 export default function DashboardPage() {
@@ -48,16 +55,22 @@ export default function DashboardPage() {
   const [risk, setRisk] = useState(MOCK_RISK_METRICS);
   const [loadingRisk, setLoadingRisk] = useState(false);
   const [balance, setBalance] = useState(0);
-  const [, setLoadingBalance] = useState(true);
+  const [balanceData, setBalanceData] = useState<BalanceData | null>(null);
+  const [loadingBalance, setLoadingBalance] = useState(true);
 
   const fetchBalance = useCallback(async () => {
     setLoadingBalance(true);
     try {
       const data = await api.get<BalanceData>("/api/wallet/balance");
-      const total = Object.values(data.tokens ?? {}).reduce((sum, v) => sum + (Number(v) || 0), 0);
-      setBalance(total || data.xlm || 0);
+      setBalanceData(data);
+      const total = Object.entries(data.tokens ?? {}).reduce(
+        (sum, [, v]) => sum + (parseFloat(v?.formatted ?? "0") || 0),
+        0,
+      );
+      setBalance(total || parseFloat(data.xlm ?? "0") || 0);
     } catch {
       setBalance(0);
+      setBalanceData(null);
     } finally {
       setLoadingBalance(false);
     }
@@ -132,6 +145,13 @@ export default function DashboardPage() {
           </motion.div>
         ))}
       </div>
+
+      <AssetList
+        xlm={balanceData?.xlm ?? "0"}
+        tokens={balanceData?.tokens ?? {}}
+        available={balanceData?.available ?? []}
+        loading={loadingBalance}
+      />
 
       <motion.div
         initial={{ opacity: 0, y: 8 }}

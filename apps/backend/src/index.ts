@@ -25,9 +25,26 @@ import passkeyRoutes from "./routes/passkey.js";
 const app = express();
 const port = env.PORT ?? 3001;
 
+const DEV_ORIGINS = [
+  "http://localhost:3000",
+  "http://localhost:3001",
+  "http://localhost:3002",
+  "http://127.0.0.1:3000",
+  "http://127.0.0.1:3002",
+];
+
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL ?? "http://localhost:3000",
+    origin:
+      process.env.NODE_ENV === "production"
+        ? process.env.FRONTEND_URL ?? "http://localhost:3000"
+        : (origin: string | undefined, cb: (err: Error | null, allow?: boolean | string) => void) => {
+            if (!origin || DEV_ORIGINS.includes(origin)) {
+              cb(null, origin ?? true);
+            } else {
+              cb(null, false);
+            }
+          },
     methods: ["GET", "POST"],
   }),
 );
