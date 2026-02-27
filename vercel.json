@@ -1,5 +1,7 @@
 {
   "version": 2,
+  "installCommand": "pnpm install",
+  "buildCommand": "pnpm --filter frontend build",
   "builds": [
     {
       "src": "apps/frontend/next.config.js",
@@ -13,4 +15,3 @@
     }
   ]
 }
-

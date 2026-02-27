@@ -28,6 +28,14 @@ const nextConfig = {
         path.join(__dirname, "stellar-sdk-config-stub.js")
       )
     );
+
+    // Align webpack module resolution with TS path alias "@/..."
+    config.resolve = config.resolve || {};
+    config.resolve.alias = {
+      ...(config.resolve.alias || {}),
+      "@": path.join(__dirname, "src"),
+    };
+
     return config;
   },
   async headers() {
