@@ -9,6 +9,8 @@ import {
   Activity,
   Shield,
   RefreshCw,
+  Lock,
+  ChevronRight,
 } from "lucide-react";
 import Link from "next/link";
 import { useState, useEffect, useCallback } from "react";
@@ -145,6 +147,29 @@ export default function DashboardPage() {
           </motion.div>
         ))}
       </div>
+
+      {/* Confidential HTTP feature card */}
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.22 }}
+      >
+        <Link
+          href="/confidential"
+          className="flex items-center gap-3 p-4 rounded-xl border border-accent/20 bg-accent/5 hover:bg-accent/10 transition-colors group"
+        >
+          <div className="w-9 h-9 rounded-lg bg-accent/15 border border-accent/25 flex items-center justify-center shrink-0">
+            <Lock size={15} className="text-accent" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-accent">Confidential HTTP</p>
+            <p className="text-[10px] text-text-muted tracking-wide mt-0.5">
+              TEE-secured API calls via Chainlink CCC
+            </p>
+          </div>
+          <ChevronRight size={14} className="text-accent/60 group-hover:text-accent transition-colors shrink-0" />
+        </Link>
+      </motion.div>
 
       <AssetList
         xlm={balanceData?.xlm ?? "0"}

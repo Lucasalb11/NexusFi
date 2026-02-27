@@ -18,7 +18,9 @@ import {
   Plus,
   Loader2,
   CheckCircle,
+  Lock,
 } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useWallet } from "@/context/WalletContext";
 import { shortenAddress } from "@/lib/format";
@@ -272,6 +274,30 @@ export default function SettingsPage() {
           </div>
         </motion.div>
       ))}
+
+      {/* Confidential Tools */}
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.25 }}
+      >
+        <h3 className="text-xs font-medium uppercase tracking-widest text-text-secondary px-1 mb-2">
+          Advanced
+        </h3>
+        <Link
+          href="/confidential"
+          className="flex items-center gap-3 p-4 glass rounded-xl hover:bg-bg-elevated/40 transition-colors"
+        >
+          <Lock size={16} className="text-accent shrink-0" />
+          <div className="flex-1">
+            <p className="text-sm font-medium">Confidential HTTP</p>
+            <p className="text-[10px] text-text-muted mt-0.5 tracking-wide">
+              Chainlink Confidential Compute · TEE-secured API calls
+            </p>
+          </div>
+          <ChevronRight size={13} className="text-text-muted" />
+        </Link>
+      </motion.div>
 
       <motion.button
         initial={{ opacity: 0 }}
