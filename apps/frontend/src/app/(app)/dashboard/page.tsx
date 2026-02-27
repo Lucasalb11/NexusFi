@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import {
   ArrowUpRight,
   ArrowDownLeft,
-  Plus,
+  ArrowLeftRight,
   CreditCard,
   Activity,
   Shield,
@@ -25,10 +25,10 @@ import { api } from "@/lib/api";
 import { shortenAddress } from "@/lib/format";
 
 const QUICK_ACTIONS = [
-  { href: "/wallet?action=send", icon: ArrowUpRight, label: "Send" },
-  { href: "/wallet?action=receive", icon: ArrowDownLeft, label: "Receive" },
-  { href: "/deposit", icon: Plus, label: "Deposit" },
-  { href: "/credit", icon: CreditCard, label: "Credit" },
+  { href: "/wallet?action=send",     icon: ArrowUpRight,   label: "Send" },
+  { href: "/wallet?action=receive",  icon: ArrowDownLeft,  label: "Receive" },
+  { href: "/bridge",                 icon: ArrowLeftRight, label: "Bridge" },
+  { href: "/credit",                 icon: CreditCard,     label: "Credit" },
 ] as const;
 
 type RiskData = {

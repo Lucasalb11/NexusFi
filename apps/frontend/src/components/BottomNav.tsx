@@ -6,17 +6,17 @@ import {
   LayoutDashboard,
   Wallet,
   CreditCard,
-  ArrowDownToLine,
+  ArrowLeftRight,
   Settings,
 } from "lucide-react";
 import clsx from "clsx";
 
 const NAV_ITEMS = [
-  { href: "/dashboard", label: "Home", icon: LayoutDashboard },
-  { href: "/wallet", label: "Wallet", icon: Wallet },
-  { href: "/deposit", label: "Deposit", icon: ArrowDownToLine },
-  { href: "/credit", label: "Credit", icon: CreditCard },
-  { href: "/settings", label: "Settings", icon: Settings },
+  { href: "/dashboard", label: "Home",     icon: LayoutDashboard },
+  { href: "/wallet",    label: "Wallet",   icon: Wallet },
+  { href: "/bridge",    label: "Bridge",   icon: ArrowLeftRight },
+  { href: "/credit",    label: "Credit",   icon: CreditCard },
+  { href: "/settings",  label: "Settings", icon: Settings },
 ] as const;
 
 export default function BottomNav() {
