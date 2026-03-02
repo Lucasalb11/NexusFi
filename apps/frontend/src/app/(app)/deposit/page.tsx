@@ -85,6 +85,7 @@ export default function DepositPage() {
   const [widgetUrl, setWidgetUrl] = useState<string | null>(null);
   const [txHash, setTxHash] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [txError, setTxError] = useState<string | null>(null);
 
   const currentMethod = PAYMENT_METHODS.find((m) => m.id === selectedMethod);
   const fiat = currentMethod?.fiat ?? "USD";
@@ -103,6 +104,7 @@ export default function DepositPage() {
     setWidgetUrl(null);
     setTxHash(null);
     setLoading(false);
+    setTxError(null);
   }, []);
 
   const handleMethodSelect = (method: PaymentMethod) => {
@@ -128,10 +130,10 @@ export default function DepositPage() {
       setWidgetUrl(result.widgetUrl);
       setTxHash(result.externalTransactionId);
       setStep("moonpay");
-    } catch {
-      setTxHash(`nexusfi-${mode}-${Date.now().toString(36)}`);
-      setStep("processing");
-      setTimeout(() => setStep("done"), 2500);
+    } catch (err: any) {
+      setTxError(err?.message ?? "Failed to get payment URL");
+      setLoading(false);
+      return;
     } finally {
       setLoading(false);
     }
@@ -298,6 +300,11 @@ export default function DepositPage() {
               </div>
             </div>
 
+            {txError && (
+              <p className="text-sm text-red-400 text-center p-3 rounded-lg bg-red-400/10">
+                {txError}
+              </p>
+            )}
             <div className="glass rounded-xl p-4 space-y-2.5">
               <div className="flex items-center gap-2 text-sm">
                 <Zap size={13} className="text-accent" />

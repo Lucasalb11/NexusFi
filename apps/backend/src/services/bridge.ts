@@ -1,3 +1,11 @@
+/**
+ * Cross-Chain Bridge Service
+ *
+ * Stellar <-> Solana/Ethereum/Avalanche. Stellar side uses real burn/mint.
+ * Dest chains (Solana, Ethereum, Avalanche): mint is SIMULATED for demo.
+ *
+ * PRODUCTION: Integrate with actual bridge contracts on each chain.
+ */
 import { burn, mint, getBalance, type TokenSymbol } from "./tokens.js";
 import crypto from "crypto";
 
@@ -137,12 +145,14 @@ export async function executeBridge(
 
       tx.status = "minting";
 
+      // DEMO: Mint on Solana/Ethereum/Avalanche is simulated (placeholder hash).
+      // Production would invoke bridge contracts on each chain.
       if (destChain === "solana") {
-        tx.mintTxHash = `sol:${crypto.randomBytes(32).toString("hex")}`;
+        tx.mintTxHash = `sol:demo-${crypto.randomBytes(32).toString("hex")}`;
       } else if (destChain === "ethereum") {
-        tx.mintTxHash = `0x${crypto.randomBytes(32).toString("hex")}`;
+        tx.mintTxHash = `0xdemo${crypto.randomBytes(32).toString("hex")}`;
       } else if (destChain === "avalanche") {
-        tx.mintTxHash = `0x${crypto.randomBytes(32).toString("hex")}`;
+        tx.mintTxHash = `0xdemo${crypto.randomBytes(32).toString("hex")}`;
       }
 
       tx.status = "completed";

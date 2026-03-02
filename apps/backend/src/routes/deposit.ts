@@ -35,19 +35,35 @@ router.get("/config", async (req, res) => {
   }
 });
 
+/**
+ * Decode user address from externalTransactionId (nexusfi-buy-{base64addr}-{ts})
+ */
+function decodeUserFromExternalId(externalId: string): string | null {
+  const match = externalId.match(/^nexusfi-buy-([A-Za-z0-9_-]+)-([a-z0-9]+)$/);
+  if (!match) return null;
+  try {
+    return Buffer.from(match[1], "base64url").toString("utf8");
+  } catch {
+    return null;
+  }
+}
+
 router.post("/buy-url", async (req, res) => {
   try {
     const { amount, fiatCurrency, paymentMethod, email } = req.body;
-    const address = getStellarAddress(req);
+    const userAddress = getStellarAddress(req);
 
     if (!amount || amount <= 0) {
       return res.status(400).json({ error: "Invalid amount" });
     }
 
-    const externalId = `nexusfi-buy-${Date.now().toString(36)}`;
+    const treasuryAddress = process.env.MOONPAY_TREASURY_ADDRESS;
+    const walletAddress = treasuryAddress ?? userAddress;
+    const userB64 = Buffer.from(userAddress, "utf8").toString("base64url");
+    const externalId = `nexusfi-buy-${userB64}-${Date.now().toString(36)}`;
 
     const widgetUrl = buildBuyWidgetUrl({
-      walletAddress: address,
+      walletAddress,
       currencyCode: "usdc_xlm",
       baseCurrencyCode: fiatCurrency ?? "brl",
       baseCurrencyAmount: amount,
@@ -59,7 +75,7 @@ router.post("/buy-url", async (req, res) => {
     res.json({
       widgetUrl,
       externalTransactionId: externalId,
-      address,
+      address: userAddress,
       currencyCode: "usdc_xlm",
       fiatCurrency: fiatCurrency ?? "brl",
       paymentMethod: paymentMethod ?? "pix",
@@ -99,10 +115,14 @@ router.post("/sell-url", async (req, res) => {
   }
 });
 
-router.post("/webhook", async (req, res) => {
+/**
+ * MoonPay webhook handler. Uses req.rawBody for signature verification (must be
+ * set by middleware that preserves raw body before express.json parses it).
+ */
+export async function moonpayWebhookHandler(req: any, res: any) {
   try {
     const signature = req.headers["moonpay-signature-v2"] as string;
-    const rawBody = JSON.stringify(req.body);
+    const rawBody = req.rawBody ?? "";
 
     if (signature && !verifyWebhookSignature(rawBody, signature)) {
       return res.status(401).json({ error: "Invalid webhook signature" });
@@ -113,24 +133,42 @@ router.post("/webhook", async (req, res) => {
     if (type === "transaction_updated" && data?.status === "completed") {
       const txId = data.externalTransactionId ?? data.id;
       const isBuy = txId?.startsWith("nexusfi-buy");
-      const cryptoAmount = data.cryptoTransactionId
-        ? data.baseCurrencyAmount
-        : data.quoteCurrencyAmount;
-      const walletAddress = data.walletAddress;
-      const fiat = (data.baseCurrencyCode ?? "usd").toUpperCase();
+      // Buy: baseCurrency=fiat, quoteCurrency=crypto → use quoteCurrencyAmount
+      // Sell: baseCurrency=crypto, quoteCurrency=fiat → use baseCurrencyAmount
+      const cryptoAmount = isBuy
+        ? (data.quoteCurrencyAmount ?? data.baseCurrencyAmount)
+        : (data.baseCurrencyAmount ?? data.quoteCurrencyAmount);
+      const payloadWalletAddress = data.walletAddress;
+      const fiat = (data.baseCurrencyCode ?? data.quoteCurrencyCode ?? "usd").toUpperCase();
       const symbol: TokenSymbol = fiat === "BRL" ? "nBRL" : "nUSD";
+
+      // Idempotency: skip if already processed
+      if (processedWebhookIds.has(txId)) {
+        return res.json({ received: true, duplicate: true });
+      }
+      addProcessedId(txId);
+
+      // Buy with treasury: USDC goes to treasury, we mint nUSD to user (from externalId)
+      // Buy without treasury: USDC goes to user, we do NOT mint (avoid double-credit)
+      // Sell: user sold crypto from their wallet, we burn nUSD from that wallet
+      const mintOrBurnAddress = isBuy
+        ? (decodeUserFromExternalId(txId) ?? (process.env.MOONPAY_TREASURY_ADDRESS ? null : payloadWalletAddress))
+        : payloadWalletAddress;
 
       console.log(
         `MoonPay ${isBuy ? "BUY" : "SELL"} completed: ${cryptoAmount} ${symbol} — tx: ${txId}`,
       );
 
-      if (walletAddress && cryptoAmount) {
+      if (mintOrBurnAddress && cryptoAmount) {
         if (isBuy) {
-          const { hash } = await mint(symbol, walletAddress, Number(cryptoAmount));
-          console.log(`Minted ${cryptoAmount} ${symbol} to ${walletAddress} — tx: ${hash}`);
+          if (process.env.MOONPAY_TREASURY_ADDRESS) {
+            const { hash } = await mint(symbol, mintOrBurnAddress, Number(cryptoAmount));
+            console.log(`Minted ${cryptoAmount} ${symbol} to ${mintOrBurnAddress} — tx: ${hash}`);
+          }
+          // else: no treasury = MoonPay sends USDC to user directly, no mint
         } else {
-          const { hash } = await burn(symbol, walletAddress, Number(cryptoAmount));
-          console.log(`Burned ${cryptoAmount} ${symbol} from ${walletAddress} — tx: ${hash}`);
+          const { hash } = await burn(symbol, mintOrBurnAddress, Number(cryptoAmount));
+          console.log(`Burned ${cryptoAmount} ${symbol} from ${mintOrBurnAddress} — tx: ${hash}`);
         }
       }
     }
@@ -140,7 +178,18 @@ router.post("/webhook", async (req, res) => {
     console.error("MoonPay webhook error:", err);
     res.status(500).json({ error: err.message });
   }
-});
+}
+
+const MAX_PROCESSED_WEBHOOK_IDS = 10_000;
+const processedWebhookIds = new Set<string>();
+function addProcessedId(id: string) {
+  processedWebhookIds.add(id);
+  if (processedWebhookIds.size > MAX_PROCESSED_WEBHOOK_IDS) {
+    const arr = [...processedWebhookIds];
+    processedWebhookIds.clear();
+    arr.slice(-MAX_PROCESSED_WEBHOOK_IDS / 2).forEach((x) => processedWebhookIds.add(x));
+  }
+}
 
 router.post("/mint", async (req, res) => {
   try {

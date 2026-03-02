@@ -20,10 +20,11 @@ router.get("/status", async (_req, res) => {
 
 router.get("/proof-of-reserve", async (_req, res) => {
   try {
-    const issuer =
-      process.env.NUSD_ISSUER_ADDRESS ??
+    const reserveAddress =
+      process.env.NUSD_RESERVE_ADDRESS ??
+      process.env.MOONPAY_TREASURY_ADDRESS ??
       "GBZXN3PIRZGNMHGA7MUUUF4GWPY5AYPV6LY4UV2GL6VJGIQRXFDNMADI";
-    const result = await simulateProofOfReserve(issuer);
+    const result = await simulateProofOfReserve(reserveAddress);
     res.json({
       workflow: "wf1-proof-of-reserve",
       track: "DeFi & Tokenization",

@@ -116,6 +116,18 @@ const ENV_SCHEMA: EnvVar[] = [
     sensitive: false,
     description: "MoonPay environment: sandbox | production",
   },
+  {
+    key: "MOONPAY_TREASURY_ADDRESS",
+    required: false,
+    sensitive: false,
+    description: "Stellar address where MoonPay sends USDC on buy; webhook mints nUSD to user",
+  },
+  {
+    key: "NUSD_RESERVE_ADDRESS",
+    required: false,
+    sensitive: false,
+    description: "Stellar address holding XLM/USDC backing nUSD; used for Proof of Reserve",
+  },
 ];
 
 const FORBIDDEN_PREFIXES = [

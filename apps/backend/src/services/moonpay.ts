@@ -141,6 +141,8 @@ export function buildSellWidgetUrl(params: MoonPaySellParams): string {
 
 /**
  * Verify MoonPay webhook signature.
+ * Uses timingSafeEqual to prevent timing attacks. Guards against
+ * buffer length mismatch (which would throw) by comparing lengths first.
  */
 export function verifyWebhookSignature(
   payload: string,
@@ -153,10 +155,13 @@ export function verifyWebhookSignature(
     .update(payload)
     .digest("base64");
 
-  return crypto.timingSafeEqual(
-    Buffer.from(signature),
-    Buffer.from(expected),
-  );
+  const sigBuf = Buffer.from(signature);
+  const expBuf = Buffer.from(expected);
+
+  // timingSafeEqual requires equal lengths; length difference is not secret
+  if (sigBuf.length !== expBuf.length) return false;
+
+  return crypto.timingSafeEqual(sigBuf, expBuf);
 }
 
 /**

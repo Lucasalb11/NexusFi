@@ -65,6 +65,10 @@ router.post("/execute", async (req, res) => {
     res.json({
       success: true,
       bridge: tx,
+      demoNotice:
+        destChain !== "stellar"
+          ? "Mint on destination chain is simulated (demo). Production requires bridge contracts."
+          : undefined,
       explorerUrls: {
         burn: tx.burnTxHash?.startsWith("sol:")
           ? `https://explorer.solana.com/tx/${tx.burnTxHash.slice(4)}?cluster=devnet`

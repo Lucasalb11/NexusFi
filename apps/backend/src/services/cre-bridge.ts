@@ -3,9 +3,15 @@
  *
  * Simulates CRE workflow results for the demo. In production, these would be
  * triggered via CRE CLI or come from actual Chainlink DON attestations.
+ *
+ * Proof of Reserve model:
+ * - nUSD is a Soroban token; total supply comes from the contract.
+ * - Reserves = XLM (or USDC) held at NUSD_RESERVE_ADDRESS (treasury).
+ * - Ratio = reserves_usd / total_supply_nusd.
  */
 
 import { getTransactions, getAccountBalance } from "./stellar.js";
+import { getTotalSupply } from "./tokens.js";
 
 export type ProofOfReserve = {
   timestamp: string;
@@ -42,28 +48,28 @@ export type RiskMetrics = {
 /**
  * Simulate CRE WF1: Proof of Reserve
  *
- * In production:
- *   CRE cron -> HTTP GET Horizon (issuer USDC balance)
- *            -> HTTP GET MoonPay tx status API
- *            -> Compute reserve ratio (USDC reserves vs nUSD supply)
- *            -> EVM write attestation to Sepolia
- *
- * MoonPay flow: User pays PIX/SWIFT → MoonPay → USDC on Stellar
- *               CRE verifies USDC reserves back nUSD 1:1
+ * Model: nUSD total supply from Soroban contract; reserves = XLM at reserve address.
+ * Reserve address = NUSD_RESERVE_ADDRESS or MOONPAY_TREASURY_ADDRESS (treasury holds USDC/XLM).
  */
 export async function simulateProofOfReserve(
-  issuerAddress: string,
+  reserveAddress: string,
 ): Promise<ProofOfReserve> {
   let reserves = 0;
   try {
-    const balanceStr = await getAccountBalance(issuerAddress);
+    const balanceStr = await getAccountBalance(reserveAddress);
     reserves = parseFloat(balanceStr);
   } catch {
     reserves = 1_250_000; // demo fallback
   }
 
-  const totalSupply = 1_200_000; // demo: from contract query
-  const reserveRatio = reserves > 0 ? reserves / totalSupply : 1.02;
+  let totalSupply = 1_200_000; // demo fallback
+  try {
+    const supplyStr = await getTotalSupply("nUSD");
+    totalSupply = Number(supplyStr) / 1e7;
+  } catch {
+    // use fallback
+  }
+  const reserveRatio = totalSupply > 0 ? reserves / totalSupply : 1.02;
 
   const status =
     reserveRatio >= 1.0

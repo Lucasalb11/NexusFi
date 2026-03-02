@@ -10,6 +10,8 @@ import {
   ChevronRight,
   Loader2,
   BarChart3,
+  CreditCard,
+  RefreshCw,
 } from "lucide-react";
 import CreditCardVisual from "@/components/CreditCardVisual";
 import CreditScoreGauge from "@/components/CreditScoreGauge";
@@ -46,6 +48,16 @@ type CreditInfo = {
   scoreAtOpening: number;
 };
 
+async function signWithFreighter(xdr: string): Promise<string> {
+  const { signTransaction } = await import("@stellar/freighter-api");
+  const result = await signTransaction(xdr, {
+    networkPassphrase: process.env.NEXT_PUBLIC_STELLAR_NETWORK_PASSPHRASE ?? "Test SDF Network ; September 2015",
+  });
+  if (result?.error) throw new Error(result.error.message ?? "Freighter signing failed");
+  if (!result?.signedTxXdr) throw new Error("Freighter not installed. Install the Freighter extension.");
+  return result.signedTxXdr;
+}
+
 export default function CreditPage() {
   const { address } = useWallet();
   const [analyzing, setAnalyzing] = useState(false);
@@ -53,6 +65,11 @@ export default function CreditPage() {
   const [reasoning, setReasoning] = useState<string | null>(null);
   const [factors, setFactors] = useState<ScoreResponse["factors"] | null>(null);
   const [creditInfo, setCreditInfo] = useState<CreditInfo | null>(null);
+  const [useAmount, setUseAmount] = useState("");
+  const [repayAmount, setRepayAmount] = useState("");
+  const [useLoading, setUseLoading] = useState(false);
+  const [repayLoading, setRepayLoading] = useState(false);
+  const [txError, setTxError] = useState<string | null>(null);
 
   const cardLastFour = address ? address.slice(-4) : "0000";
   const cardName = address ? shortenAddress(address, 4).toUpperCase() : "NEXUSFI USER";
@@ -85,6 +102,44 @@ export default function CreditPage() {
       setAnalyzing(false);
     }
   }, [score]);
+
+  const handleUseCredit = useCallback(async () => {
+    const amount = Number(useAmount);
+    if (!amount || amount <= 0) return;
+    setUseLoading(true);
+    setTxError(null);
+    try {
+      const { xdr } = await api.post<{ xdr: string }>("/api/credit/use-unsigned", { amount });
+      const signedXdr = await signWithFreighter(xdr);
+      await api.post("/api/credit/submit-signed", { xdr: signedXdr });
+      setUseAmount("");
+      const info = await api.get<CreditInfo>("/api/credit/info");
+      if (info.hasCredit) setCreditInfo(info);
+    } catch (err: any) {
+      setTxError(err?.message ?? "Failed to use credit");
+    } finally {
+      setUseLoading(false);
+    }
+  }, [useAmount]);
+
+  const handleRepay = useCallback(async () => {
+    const amount = Number(repayAmount);
+    if (!amount || amount <= 0) return;
+    setRepayLoading(true);
+    setTxError(null);
+    try {
+      const { xdr } = await api.post<{ xdr: string }>("/api/credit/repay-unsigned", { amount });
+      const signedXdr = await signWithFreighter(xdr);
+      await api.post("/api/credit/submit-signed", { xdr: signedXdr });
+      setRepayAmount("");
+      const info = await api.get<CreditInfo>("/api/credit/info");
+      if (info.hasCredit) setCreditInfo(info);
+    } catch (err: any) {
+      setTxError(err?.message ?? "Failed to repay");
+    } finally {
+      setRepayLoading(false);
+    }
+  }, [repayAmount]);
 
   const factorsList = factors
     ? [
@@ -130,6 +185,62 @@ export default function CreditPage() {
           <p className="text-sm font-semibold mt-1 text-success">{formatCurrency(available)}</p>
         </div>
       </div>
+
+      {creditInfo?.hasCredit && (
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="glass rounded-xl p-4 space-y-3"
+        >
+          <h3 className="text-xs font-medium uppercase tracking-widest text-text-secondary">
+            Use Credit / Repay
+          </h3>
+          <p className="text-[11px] text-text-muted">
+            Requires Freighter to sign. use_credit and repay need your wallet signature.
+          </p>
+          {txError && (
+            <p className="text-[11px] text-red-400">{txError}</p>
+          )}
+          <div className="flex gap-2">
+            <div className="flex-1 flex gap-2">
+              <input
+                type="number"
+                placeholder="Use amount"
+                value={useAmount}
+                onChange={(e) => setUseAmount(e.target.value)}
+                className="flex-1 px-3 py-2 rounded-lg bg-bg-primary border border-border/30 text-sm"
+              />
+              <button
+                onClick={handleUseCredit}
+                disabled={useLoading || !useAmount}
+                className="px-4 py-2 rounded-lg bg-accent text-bg-primary text-xs font-medium flex items-center gap-2 disabled:opacity-50"
+              >
+                {useLoading ? <Loader2 size={14} className="animate-spin" /> : <CreditCard size={14} />}
+                Use
+              </button>
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <div className="flex-1 flex gap-2">
+              <input
+                type="number"
+                placeholder="Repay amount"
+                value={repayAmount}
+                onChange={(e) => setRepayAmount(e.target.value)}
+                className="flex-1 px-3 py-2 rounded-lg bg-bg-primary border border-border/30 text-sm"
+              />
+              <button
+                onClick={handleRepay}
+                disabled={repayLoading || !repayAmount}
+                className="px-4 py-2 rounded-lg bg-success/20 text-success text-xs font-medium flex items-center gap-2 disabled:opacity-50"
+              >
+                {repayLoading ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
+                Repay
+              </button>
+            </div>
+          </div>
+        </motion.div>
+      )}
 
       <motion.div
         initial={{ opacity: 0, y: 8 }}

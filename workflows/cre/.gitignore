@@ -7,3 +7,8 @@ secrets.yaml
 # Build and deps
 node_modules/
 dist/
+
+# CRE compiled artifacts (build outputs — do not commit)
+*.wasm
+tmp.js
+tmp.wasm

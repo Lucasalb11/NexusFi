@@ -3,6 +3,7 @@
 use soroban_sdk::{contract, contracterror, contractimpl, Address, Env, String};
 
 mod storage;
+#[cfg(test)]
 mod test;
 
 pub use storage::*;

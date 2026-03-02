@@ -1,6 +1,12 @@
 import { Router } from "express";
 import { simulateAICreditScoring } from "../services/cre-bridge.js";
-import { invokeContractReadNative, invokeContractWrite, scVal } from "../services/soroban.js";
+import {
+  invokeContractReadNative,
+  invokeContractWrite,
+  buildUserSignedTransaction,
+  submitSignedTransaction,
+  scVal,
+} from "../services/soroban.js";
 import { getStellarAddress } from "../middleware/auth.js";
 import crypto from "crypto";
 
@@ -140,7 +146,11 @@ router.post("/open", async (req, res) => {
   }
 });
 
-router.post("/use", async (req, res) => {
+/**
+ * Build unsigned use_credit transaction for user to sign via Freighter.
+ * use_credit requires user.require_auth() — backend cannot sign on behalf of user.
+ */
+router.post("/use-unsigned", async (req, res) => {
   try {
     const { amount } = req.body;
     if (!amount || amount <= 0) {
@@ -153,16 +163,73 @@ router.post("/use", async (req, res) => {
     const address = getStellarAddress(req);
     const rawAmount = BigInt(Math.round(Number(amount) * 1e7));
 
-    const { hash } = await invokeContractWrite(CREDIT_LINE_CONTRACT, "use_credit", [
-      scVal.address(address),
-      scVal.i128(rawAmount),
-    ]);
+    const xdr = await buildUserSignedTransaction(
+      CREDIT_LINE_CONTRACT,
+      "use_credit",
+      [scVal.address(address), scVal.i128(rawAmount)],
+      address,
+    );
+
+    res.json({
+      xdr,
+      address,
+      amount,
+      nextStep: "Sign with Freighter and POST to /api/credit/submit-signed",
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/**
+ * Build unsigned repay transaction for user to sign via Freighter.
+ */
+router.post("/repay-unsigned", async (req, res) => {
+  try {
+    const { amount } = req.body;
+    if (!amount || amount <= 0) {
+      return res.status(400).json({ error: "Invalid amount" });
+    }
+    if (!CREDIT_LINE_CONTRACT) {
+      return res.status(503).json({ error: "Contract not configured" });
+    }
+
+    const address = getStellarAddress(req);
+    const rawAmount = BigInt(Math.round(Number(amount) * 1e7));
+
+    const xdr = await buildUserSignedTransaction(
+      CREDIT_LINE_CONTRACT,
+      "repay",
+      [scVal.address(address), scVal.i128(rawAmount)],
+      address,
+    );
+
+    res.json({
+      xdr,
+      address,
+      amount,
+      nextStep: "Sign with Freighter and POST to /api/credit/submit-signed",
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/**
+ * Submit a transaction signed by the user (via Freighter).
+ */
+router.post("/submit-signed", async (req, res) => {
+  try {
+    const { xdr: signedXdr } = req.body;
+    if (!signedXdr || typeof signedXdr !== "string") {
+      return res.status(400).json({ error: "Missing xdr" });
+    }
+
+    const { hash } = await submitSignedTransaction(signedXdr);
 
     res.json({
       success: true,
       txHash: hash,
-      address,
-      amountUsed: amount,
       explorerUrl: `https://stellar.expert/explorer/testnet/tx/${hash}`,
       timestamp: new Date().toISOString(),
     });
@@ -171,35 +238,18 @@ router.post("/use", async (req, res) => {
   }
 });
 
-router.post("/repay", async (req, res) => {
-  try {
-    const { amount } = req.body;
-    if (!amount || amount <= 0) {
-      return res.status(400).json({ error: "Invalid amount" });
-    }
-    if (!CREDIT_LINE_CONTRACT) {
-      return res.status(503).json({ error: "Contract not configured" });
-    }
+/** @deprecated Use /use-unsigned + Freighter sign + /submit-signed. use_credit requires user auth. */
+router.post("/use", async (_req, res) => {
+  res.status(400).json({
+    error: "use_credit requires user signature. Use POST /api/credit/use-unsigned to get XDR, sign with Freighter, then POST to /api/credit/submit-signed.",
+  });
+});
 
-    const address = getStellarAddress(req);
-    const rawAmount = BigInt(Math.round(Number(amount) * 1e7));
-
-    const { hash } = await invokeContractWrite(CREDIT_LINE_CONTRACT, "repay", [
-      scVal.address(address),
-      scVal.i128(rawAmount),
-    ]);
-
-    res.json({
-      success: true,
-      txHash: hash,
-      address,
-      amountRepaid: amount,
-      explorerUrl: `https://stellar.expert/explorer/testnet/tx/${hash}`,
-      timestamp: new Date().toISOString(),
-    });
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
-  }
+/** @deprecated Use /repay-unsigned + Freighter sign + /submit-signed. repay requires user auth. */
+router.post("/repay", async (_req, res) => {
+  res.status(400).json({
+    error: "repay requires user signature. Use POST /api/credit/repay-unsigned to get XDR, sign with Freighter, then POST to /api/credit/submit-signed.",
+  });
 });
 
 export default router;

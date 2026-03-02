@@ -1,1 +1,5 @@
-{"schedule":"*/30 * * * * *"}
+{
+  "schedule": "*/5 * * * *",
+  "reserveAddress": "GBZXN3PIRZGNMHGA7MUUUF4GWPY5AYPV6LY4UV2GL6VJGIQRXFDNMADI",
+  "bridgeWatchAddress": "GCTAOBTUFGLJ3HZRICJX4LVJLCUTW4RWRE4RV5B7XHNL3PD4TLX2TGUK"
+}

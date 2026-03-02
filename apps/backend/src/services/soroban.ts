@@ -108,6 +108,59 @@ export async function invokeContractWrite(
   throw new Error(`Transaction ${sendResult.hash} failed: ${getResult.status}`);
 }
 
+/**
+ * Build a Soroban transaction for a user to sign (e.g. use_credit, repay).
+ * Returns the XDR envelope for the frontend to sign with Freighter.
+ */
+export async function buildUserSignedTransaction(
+  contractId: string,
+  method: string,
+  args: xdr.ScVal[],
+  userPublicKey: string,
+): Promise<string> {
+  const account = await sorobanRpc.getAccount(userPublicKey);
+  const contract = new Contract(contractId);
+
+  const tx = new TransactionBuilder(account, {
+    fee: "10000000",
+    networkPassphrase: NETWORK_PASSPHRASE,
+  })
+    .addOperation(contract.call(method, ...args))
+    .setTimeout(60)
+    .build();
+
+  const simResult = await sorobanRpc.simulateTransaction(tx);
+  if (!rpc.Api.isSimulationSuccess(simResult)) {
+    throw new Error(`Simulation failed for ${method}`);
+  }
+
+  const preparedTx = rpc.assembleTransaction(tx, simResult).build();
+  return preparedTx.toXDR();
+}
+
+/**
+ * Submit a signed transaction (signed by user via Freighter).
+ */
+export async function submitSignedTransaction(signedXdr: string): Promise<{ hash: string }> {
+  const tx = TransactionBuilder.fromXDR(signedXdr, NETWORK_PASSPHRASE);
+  const sendResult = await sorobanRpc.sendTransaction(tx);
+
+  if (sendResult.status === "ERROR") {
+    throw new Error(`Transaction failed: ${sendResult.status}`);
+  }
+
+  let getResult = await sorobanRpc.getTransaction(sendResult.hash);
+  while (getResult.status === "NOT_FOUND") {
+    await new Promise((r) => setTimeout(r, 1000));
+    getResult = await sorobanRpc.getTransaction(sendResult.hash);
+  }
+
+  if (getResult.status === "SUCCESS") {
+    return { hash: sendResult.hash };
+  }
+  throw new Error(`Transaction ${sendResult.hash} failed: ${getResult.status}`);
+}
+
 export const scVal = {
   address: (addr: string) =>
     nativeToScVal(Address.fromString(addr), { type: "address" }),
