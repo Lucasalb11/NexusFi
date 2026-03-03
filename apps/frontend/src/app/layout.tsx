@@ -24,6 +24,9 @@ export const viewport: Viewport = {
   themeColor: "#080C15",
 };
 
+/** Skip static prerendering to avoid useContext null during build (WalletProvider context) */
+export const dynamic = "force-dynamic";
+
 function ServiceWorkerRegistration() {
   return (
     <script
