@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { WalletProvider } from "@/context/WalletContext";
+import { Providers } from "@/components/Providers";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -62,9 +62,9 @@ export default function RootLayout({
         <ServiceWorkerRegistration />
       </head>
       <body className="min-h-screen">
-        <WalletProvider>
+        <Providers>
           {children}
-        </WalletProvider>
+        </Providers>
       </body>
     </html>
   );
