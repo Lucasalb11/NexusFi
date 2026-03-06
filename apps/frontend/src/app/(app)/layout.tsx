@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import BottomNav from "@/components/BottomNav";
+import PremiumTopNav from "@/components/PremiumTopNav";
 import { useWallet } from "@/context/WalletContext";
 
 export default function AppLayout({
@@ -23,7 +24,8 @@ export default function AppLayout({
 
   return (
     <div className="min-h-screen pb-24">
-      <main className="max-w-lg mx-auto px-4 safe-top">
+      <PremiumTopNav />
+      <main className="max-w-lg mx-auto px-4 pt-20 safe-top">
         {children}
       </main>
       <BottomNav />
