@@ -12,6 +12,7 @@ const webpack = require("webpack");
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  output: "standalone",
   reactStrictMode: true,
   transpilePackages: [
     "passkey-kit",
