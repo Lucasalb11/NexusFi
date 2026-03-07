@@ -2,6 +2,7 @@
 
 import dynamic from "next/dynamic";
 import type { ReactNode } from "react";
+import { ThemeProvider } from "@/components/PremiumTopNav";
 
 // WalletProvider relies on passkey-kit / Stellar SDK which access browser-only
 // APIs (WebAuthn, WebCrypto, etc.) at module evaluation time.  Importing it with
@@ -13,5 +14,9 @@ const WalletProvider = dynamic(
 );
 
 export function Providers({ children }: { children: ReactNode }) {
-  return <WalletProvider>{children}</WalletProvider>;
+  return (
+    <ThemeProvider>
+      <WalletProvider>{children}</WalletProvider>
+    </ThemeProvider>
+  );
 }

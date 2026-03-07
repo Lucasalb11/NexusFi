@@ -15,6 +15,7 @@ import {
 import Link from "next/link";
 import { useState, useEffect, useCallback } from "react";
 import BalanceCard from "@/components/BalanceCard";
+import { PremiumHeroSection } from "@/components/PremiumTopNav";
 import AssetList from "@/components/AssetList";
 import TransactionList from "@/components/TransactionList";
 import {
@@ -105,6 +106,7 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6 pt-6 pb-4">
+      <PremiumHeroSection />
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
