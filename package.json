@@ -3,25 +3,29 @@
   "version": "0.1.0",
   "private": true,
   "description": "NexusFi - Monorepo (Frontend, Backend, Soroban Contracts, Workflows)",
+  "workspaces": [
+    "apps/frontend",
+    "apps/backend"
+  ],
   "scripts": {
-    "dev": "pnpm run -r --parallel dev",
-    "dev:frontend": "pnpm --filter frontend dev",
-    "dev:backend": "pnpm --filter backend dev",
-    "build": "pnpm run -r build",
-    "build:frontend": "pnpm --filter frontend build",
-    "build:backend": "pnpm --filter backend build",
-    "lint": "pnpm run -r lint",
-    "test": "pnpm run -r test",
-    "clean": "pnpm run -r clean && rm -rf node_modules",
+    "dev": "concurrently \"yarn workspace frontend dev\" \"yarn workspace backend dev\"",
+    "dev:frontend": "yarn workspace frontend dev",
+    "dev:backend": "yarn workspace backend dev",
+    "build": "yarn workspaces run build",
+    "build:frontend": "yarn workspace frontend build",
+    "build:backend": "yarn workspace backend build",
+    "lint": "yarn workspaces run lint",
+    "test": "yarn workspaces run test",
+    "clean": "yarn workspaces run clean && rm -rf node_modules",
     "setup:hooks": "cp scripts/pre-commit-secrets.sh .git/hooks/pre-commit && chmod +x .git/hooks/pre-commit && echo '✅ Pre-commit secret scanner installed.'",
     "scan:secrets": "gitleaks detect --source . --config .gitleaks.toml --verbose"
   },
   "engines": {
     "node": ">=18.0.0",
-    "pnpm": ">=8.0.0"
+    "yarn": ">=1.22.0"
   },
-  "packageManager": "pnpm@9.0.0",
   "devDependencies": {
+    "concurrently": "^9.0.0",
     "playwright": "^1.58.2"
   }
 }

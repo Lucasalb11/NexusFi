@@ -7,7 +7,7 @@
 #   cp scripts/pre-commit-secrets.sh .git/hooks/pre-commit
 #   chmod +x .git/hooks/pre-commit
 #
-# Or run: pnpm run setup:hooks
+# Or run: yarn run setup:hooks
 # =====================================================================
 
 set -euo pipefail
@@ -41,6 +41,7 @@ ALLOW_PATTERNS=(
   'pre-commit-secrets\.sh'
   'validate-env\.ts'
   'gitleaks\.toml'
+  'yarn\.lock'
   'pnpm-lock\.yaml'
   'package-lock\.json'
   'bun\.lock'

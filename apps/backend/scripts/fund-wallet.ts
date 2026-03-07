@@ -2,8 +2,8 @@
  * Fund a wallet (contract or account) with nUSD and nBRL on Stellar Testnet.
  * Uses the backend's SOROBAN_SECRET_KEY and token contracts.
  *
- * Usage: pnpm exec tsx scripts/fund-wallet.ts [address]
- * Example: pnpm exec tsx scripts/fund-wallet.ts CBLAC337TEOE452FFNO53D5H7VWEVP2DYBIWZ2AZUG2SBZBSWKYBTODA
+ * Usage: yarn workspace backend fund-wallet [address]
+ * Example: yarn workspace backend fund-wallet CBLAC337TEOE452FFNO53D5H7VWEVP2DYBIWZ2AZUG2SBZBSWKYBTODA
  *
  * Note: XLM cannot be sent to a contract address (C...) via Friendbot; only
  * classic accounts (G...) can be funded with XLM that way. This script only mints nUSD and nBRL.

@@ -2,15 +2,15 @@
 
 ## Prerequisites
 
-- Node.js >= 18, pnpm >= 8
+- Node.js >= 18, yarn >= 1.22
 - Stellar account and environment (testnet/mainnet)
 - (Optional) Chainlink for oracles
 
 ## Build
 
 ```bash
-pnpm install
-pnpm build
+yarn install
+yarn build
 ```
 
 ## Production variables
@@ -21,13 +21,13 @@ pnpm build
 
 ## Frontend (e.g. Vercel)
 
-- Build command: `pnpm build:frontend` (or `pnpm --filter frontend build`).
+- Build command: `yarn build:frontend` (or `yarn workspace frontend build`).
 - Root directory: `apps/frontend` or configure monorepo in the dashboard.
 - Variables: `NEXT_PUBLIC_API_URL` pointing to the backend in production.
 
 ## Backend (e.g. Node on VPS/container)
 
-- Run `pnpm --filter backend start` after `pnpm build`.
+- Run `yarn workspace backend start` after `yarn build`.
 - Ensure `NODE_ENV=production` and `PORT` are set.
 
 ## Soroban contracts

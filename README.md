@@ -318,7 +318,7 @@ cp workflows/cre/secrets.yaml.example workflows/cre/secrets.yaml
 ```bash
 # 1. Clone and install
 git clone https://github.com/Lucasalb11/NexusFi.git && cd NexusFi
-pnpm install
+yarn install
 
 # 2. Run CRE simulation (no keys needed for staging simulation)
 cd workflows/cre && bun install
@@ -326,7 +326,7 @@ cre workflow simulate --workflow-file workflow.yaml --target staging
 
 # 3. Start the full stack
 cd ../.. && cp .env.example .env   # fill in SOROBAN_SECRET_KEY at minimum
-pnpm dev
+yarn dev
 # → Frontend: http://localhost:3000   Backend: http://localhost:3001
 
 # 4. Verify live contracts on Stellar Testnet
@@ -442,7 +442,7 @@ NexusFi/
 ### Prerequisites
 
 ```
-Node.js >= 18 · pnpm >= 8 · Bun >= 1.0 (CRE workflows)
+Node.js >= 18 · yarn >= 1.22 · Bun >= 1.0 (CRE workflows)
 Rust + wasm32-unknown-unknown (Soroban contracts)
 Stellar CLI (contract deployment)
 CRE CLI (workflow simulation/deployment)
@@ -453,9 +453,9 @@ Foundry (Sepolia contracts)
 
 ```bash
 git clone https://github.com/Lucasalb11/NexusFi.git
-cd NexusFi && pnpm install
+cd NexusFi && yarn install
 cp .env.example .env   # fill in SOROBAN_SECRET_KEY and NUSD_CONTRACT_ID at minimum
-pnpm dev               # frontend :3000 + backend :3001
+yarn dev               # frontend :3000 + backend :3001
 ```
 
 ### Build Soroban Contracts
