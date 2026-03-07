@@ -9,7 +9,7 @@
     "start": "node dist/index.js",
     "fund-wallet": "tsx scripts/fund-wallet.ts",
     "lint": "eslint src --ext .ts",
-    "test": "node --experimental-vm-modules node_modules/vitest/vitest.mjs run",
+    "test": "node --experimental-vm-modules node_modules/vitest/vitest.mjs run --passWithNoTests",
     "clean": "rm -rf dist"
   },
   "dependencies": {
