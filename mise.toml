@@ -1,4 +1,4 @@
 # Node 20+ required by @stellar/stellar-sdk
 [tools]
-node = "20.11.1"
+node = "22.18.0"
 yarn = "1.22.22"
