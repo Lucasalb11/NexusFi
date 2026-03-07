@@ -748,7 +748,7 @@ function RequestTab() {
           </div>
           <p className="text-[11px] text-text-muted leading-relaxed tracking-wide">
             Credentials are encrypted under the CCC threshold public key before leaving this device.
-            The decryption DON will re-encrypt key shares to the assigned enclave's ephemeral key.
+            The decryption DON will re-encrypt key shares to the assigned enclave&apos;s ephemeral key.
             Your raw credentials are <strong className="text-text-secondary">never visible</strong> to any oracle node.
           </p>
           <div className="flex items-center gap-1.5">

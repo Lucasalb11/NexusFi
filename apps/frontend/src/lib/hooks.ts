@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { api, ApiError } from "./api";
 
 type AsyncState<T> = {
@@ -15,6 +15,11 @@ export function useApi<T>(path: string, fallback?: T): AsyncState<T> {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Keep fallback in a ref so it doesn't need to be a useCallback dependency
+  // (including it would cause infinite refetch loops for object/array fallbacks)
+  const fallbackRef = useRef(fallback);
+  fallbackRef.current = fallback;
+
   const fetch = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -27,7 +32,10 @@ export function useApi<T>(path: string, fallback?: T): AsyncState<T> {
       } else {
         setError("Connection error");
       }
-      if (fallback && !data) setData(fallback);
+      // Use functional setState to avoid depending on `data` in the closure
+      if (fallbackRef.current) {
+        setData((prev) => prev ?? fallbackRef.current!);
+      }
     } finally {
       setLoading(false);
     }

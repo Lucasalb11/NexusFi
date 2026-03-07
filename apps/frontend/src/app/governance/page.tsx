@@ -576,7 +576,7 @@ export default function GovernancePage() {
               Transparency & Audits
             </h2>
             <p className="text-text-secondary text-sm max-w-xl leading-relaxed">
-              Security is not a feature — it's a foundation. Everything is open, verified, and auditable.
+              Security is not a feature — it&apos;s a foundation. Everything is open, verified, and auditable.
             </p>
           </FadeIn>
 

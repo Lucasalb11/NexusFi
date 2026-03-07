@@ -388,7 +388,7 @@ export default function WelcomePage() {
                     href="/login"
                     className="inline-flex items-center gap-2 px-6 py-3 gradient-accent rounded-xl text-sm font-semibold text-bg-primary shadow-lg shadow-accent/20 hover:opacity-90 transition-opacity"
                   >
-                    Apply Now — It's Free
+                    Apply Now — It&apos;s Free
                     <ArrowRight className="w-4 h-4" />
                   </Link>
                 </div>
@@ -472,7 +472,7 @@ export default function WelcomePage() {
                 Your Transactions Stay Private
               </h2>
               <p className="text-text-secondary text-sm leading-relaxed mb-6">
-                Powered by Chainlink's Confidential Compute architecture. Your financial data,
+                Powered by Chainlink&apos;s Confidential Compute architecture. Your financial data,
                 API credentials, and personal information are processed inside a hardware-secured
                 Trusted Execution Environment (TEE) — never exposed on-chain.
               </p>
