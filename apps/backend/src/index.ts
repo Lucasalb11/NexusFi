@@ -11,7 +11,7 @@
  */
 
 import "dotenv/config";
-import express from "express";
+import express, { type RequestHandler } from "express";
 import cors from "cors";
 import session from "express-session";
 import { env } from "./lib/validate-env.js";
@@ -87,7 +87,7 @@ app.use(
       sameSite: "lax",
       maxAge: 7 * 24 * 60 * 60 * 1000,
     },
-  }),
+  }) as unknown as RequestHandler,
 );
 app.use(demoAuth);
 
