@@ -45,6 +45,8 @@ import {
 } from "lucide-react";
 import clsx from "clsx";
 
+export const dynamic = "force-dynamic";
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type Tab = "request" | "vault" | "history";

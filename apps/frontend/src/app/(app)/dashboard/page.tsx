@@ -26,6 +26,8 @@ import { useWallet } from "@/context/WalletContext";
 import { api } from "@/lib/api";
 import { shortenAddress } from "@/lib/format";
 
+export const dynamic = "force-dynamic";
+
 const QUICK_ACTIONS = [
   { href: "/wallet?action=send",     icon: ArrowUpRight,   label: "Send" },
   { href: "/wallet?action=receive",  icon: ArrowDownLeft,  label: "Receive" },

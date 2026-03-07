@@ -145,6 +145,8 @@ function BottomSheet({
 
 // ─── Main page ────────────────────────────────────────────────────────────────
 
+export const dynamic = "force-dynamic";
+
 export default function BridgePage() {
   const [fromChain, setFromChain] = useState<Chain>(CHAINS[0]);
   const [toChain,   setToChain]   = useState<Chain>(CHAINS[1]);

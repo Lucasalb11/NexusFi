@@ -20,6 +20,8 @@ import {
 import clsx from "clsx";
 import { api } from "@/lib/api";
 
+export const dynamic = "force-dynamic";
+
 type Mode = "deposit" | "withdraw";
 type Step = "method" | "amount" | "moonpay" | "processing" | "done";
 type PaymentMethod = "pix" | "swift" | "card" | "sepa";

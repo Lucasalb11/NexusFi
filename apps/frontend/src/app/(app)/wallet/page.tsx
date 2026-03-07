@@ -16,6 +16,8 @@ import { useWallet } from "@/context/WalletContext";
 import { shortenAddress } from "@/lib/format";
 import { api } from "@/lib/api";
 
+export const dynamic = "force-dynamic";
+
 type Tab = "history" | "send" | "receive";
 
 export default function WalletPage() {

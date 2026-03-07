@@ -17,6 +17,8 @@ import { useRouter } from "next/navigation";
 import { useWallet } from "@/context/WalletContext";
 import { shortenAddress } from "@/lib/format";
 
+export const dynamic = "force-dynamic";
+
 type Mode = "choice" | "create" | "signin";
 
 export default function LoginPage() {

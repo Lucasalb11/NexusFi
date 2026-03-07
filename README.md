@@ -18,7 +18,7 @@ We bring Nubank-style banking to the 1.4 billion unbanked adults who have smartp
 
 ---
 
-## Submission Checklist (for Judges)
+## Chainlink Submission Checklist 
 
 | Requirement | Status | Link |
 |-------------|--------|------|
@@ -35,14 +35,14 @@ We bring Nubank-style banking to the 1.4 billion unbanked adults who have smartp
 
 ## Prize Tracks (4 tracks targeted)
 
-| Track | Prize Pool | 1st Place | Our CRE Workflow | What We Deliver |
+| Track  | Our CRE Workflow | What We Deliver |
 |-------|-----------|-----------|------------------|-----------------|
-| **DeFi & Tokenization** | $40K | **$20K** | WF1: Proof of Reserve | nUSD + nBRL stablecoins on Stellar, CRE-verified reserve ratio every 30s, written to Sepolia |
-| **CRE & AI** | $33.5K | **$17K** | WF2: AI Credit Scoring | On-chain tx history → median consensus across CRE nodes → weighted ML model (Gemini-ready) → score attested on Sepolia |
-| **Risk & Compliance** | $32K | **$16K** | WF3: Risk Monitor | Automated monitoring of reserve ratio, utilization, and price volatility — triggers on-chain alert at `ratio < 95%` |
-| **Privacy** | $32K | **$16K** | WF4: Confidential HTTP | Credit eligibility via `runtime.getSecret()` — zero PII on-chain; only `keccak256(userId)` + boolean result published |
+| **DeFi & Tokenization** WF1: Proof of Reserve | nUSD + nBRL stablecoins on Stellar, CRE-verified reserve ratio every 30s, written to Sepolia |
+| **CRE & AI** WF2: AI Credit Scoring | On-chain tx history → median consensus across CRE nodes → weighted ML model (Gemini-ready) → score attested on Sepolia |
+| **Risk & Compliance**  WF3: Risk Monitor | Automated monitoring of reserve ratio, utilization, and price volatility — triggers on-chain alert at `ratio < 95%` |
+| **Privacy**  WF4: Confidential HTTP | Credit eligibility via `runtime.getSecret()` — zero PII on-chain; only `keccak256(userId)` + boolean result published |
 
-**Maximum prize potential: $69K** (+ $1,500 Top 10 runner-up)
+
 
 > WF5 (Cross-Chain Bridge) is a 5th workflow covering both DeFi and CRE tracks, strengthening our DeFi submission with a complete burn-verify-mint cycle between Stellar, Solana, Ethereum, and Avalanche.
 

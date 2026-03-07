@@ -24,6 +24,8 @@ import {
   MOCK_CREDIT_USED,
 } from "@/lib/mock-data";
 
+export const dynamic = "force-dynamic";
+
 type ScoreResponse = {
   score: number;
   reasoning: string;

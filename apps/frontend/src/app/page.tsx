@@ -24,6 +24,8 @@ import {
 } from "lucide-react";
 import PublicHeader from "@/components/PublicHeader";
 
+export const dynamic = "force-dynamic";
+
 // ─── Fade-in section wrapper ──────────────────────────────────────────────────
 
 function FadeIn({

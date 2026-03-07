@@ -25,6 +25,8 @@ import { useRouter } from "next/navigation";
 import { useWallet } from "@/context/WalletContext";
 import { shortenAddress } from "@/lib/format";
 
+export const dynamic = "force-dynamic";
+
 export default function SettingsPage() {
   const {
     address,
