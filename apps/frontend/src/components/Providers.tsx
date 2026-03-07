@@ -1,16 +1,10 @@
 "use client";
 
-import dynamic from "next/dynamic";
 import type { ReactNode } from "react";
+import { WalletProvider } from "@/context/WalletContext";
 
-// WalletProvider relies on passkey-kit / Stellar SDK which access browser-only
-// APIs (WebAuthn, WebCrypto, etc.) at module evaluation time.  Importing it with
-// ssr: false prevents ANY of that code from running during Next.js SSG prerender,
-// eliminating the "Cannot read properties of null (reading 'useContext')" crash.
-const WalletProvider = dynamic(
-  () => import("../context/WalletContext").then((m) => m.WalletProvider),
-  { ssr: false }
-);
+// Keep provider mounted during prerender; passkey-kit itself is loaded lazily
+// inside WalletContext actions, so this is safe for SSR/SSG.
 
 export function Providers({ children }: { children: ReactNode }) {
   return <WalletProvider>{children}</WalletProvider>;
