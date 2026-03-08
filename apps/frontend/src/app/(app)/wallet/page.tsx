@@ -26,8 +26,8 @@ type Tab = "history" | "send" | "receive";
 
 type ParsedQrPayment = {
   to: string;
-  amount?: number;
-  token?: string;
+  amount?: number | undefined;
+  token?: string | undefined;
 };
 
 function isValidTransferAddress(value: string) {
