@@ -2,7 +2,7 @@
 
 > **[Chainlink Convergence Hackathon](https://chain.link/hackathon)** · Feb 6 – Mar 8, 2026 · Targeting 4 tracks · $69K+ in prizes
 
-[![Live App](https://img.shields.io/badge/Live%20App-nexusfi.vercel.app-BFA36B?style=for-the-badge)](https://nexusfi.vercel.app)
+[![Live App](https://img.shields.io/badge/Live%20App-nexusfi.vercel.app-BFA36B?style=for-the-badge)](https://nexusfi-production-4f80.up.railway.app)
 [![GitHub](https://img.shields.io/badge/GitHub-Lucasalb11%2FNexusFi-181717?style=for-the-badge&logo=github)](https://github.com/Lucasalb11/NexusFi)
 [![Demo Video](https://img.shields.io/badge/Demo%20Video-Watch%20Now-FF0000?style=for-the-badge&logo=youtube)](#demo-video)
 
