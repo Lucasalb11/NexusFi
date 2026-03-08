@@ -12,6 +12,7 @@ import {
   AlertCircle,
   UserPlus,
   LogIn,
+  LogOut,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useWallet } from "@/context/WalletContext";
@@ -22,7 +23,7 @@ export const dynamic = "force-dynamic";
 type Mode = "choice" | "create" | "signin";
 
 export default function LoginPage() {
-  const { createAccount, signIn, isLoading, error, address, isConnected } = useWallet();
+  const { createAccount, signIn, disconnect, isLoading, error, address, isConnected } = useWallet();
   const [mode, setMode] = useState<Mode>("choice");
   const [username, setUsername] = useState("");
   const [navigating, setNavigating] = useState(false);
@@ -155,6 +156,15 @@ export default function LoginPage() {
                     <ChevronRight size={14} />
                   </>
                 )}
+              </button>
+
+              <button
+                onClick={disconnect}
+                disabled={busy}
+                className="w-full py-3 rounded-xl border border-border/30 text-text-muted font-medium flex items-center justify-center gap-2 disabled:opacity-40 hover:border-danger/30 hover:text-danger transition-colors text-xs tracking-wide"
+              >
+                <LogOut size={14} />
+                Disconnect Account
               </button>
             </motion.div>
           ) : mode === "choice" ? (
