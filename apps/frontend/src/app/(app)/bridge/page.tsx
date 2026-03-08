@@ -13,8 +13,10 @@ import {
   Clock,
   Info,
   X,
+  AlertCircle,
 } from "lucide-react";
 import clsx from "clsx";
+import { api, ApiError } from "@/lib/api";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -36,13 +38,12 @@ type Step = "form" | "processing" | "done";
 
 // ─── Static data ──────────────────────────────────────────────────────────────
 
+// Chains supported by the backend bridge service
 const CHAINS: Chain[] = [
-  { id: "stellar",  name: "Stellar",   short: "XLM",   color: "#7B61FF", icon: "✦" },
-  { id: "ethereum", name: "Ethereum",  short: "ETH",   color: "#627EEA", icon: "Ξ" },
-  { id: "polygon",  name: "Polygon",   short: "MATIC", color: "#8247E5", icon: "⬡" },
-  { id: "bsc",      name: "BNB Chain", short: "BSC",   color: "#F3BA2F", icon: "◈" },
-  { id: "base",     name: "Base",      short: "BASE",  color: "#0052FF", icon: "◉" },
-  { id: "solana",   name: "Solana",    short: "SOL",   color: "#9945FF", icon: "◎" },
+  { id: "stellar",   name: "Stellar Testnet",   short: "XLM",  color: "#7B61FF", icon: "✦" },
+  { id: "ethereum",  name: "Ethereum Sepolia",  short: "ETH",  color: "#627EEA", icon: "Ξ" },
+  { id: "solana",    name: "Solana Devnet",     short: "SOL",  color: "#9945FF", icon: "◎" },
+  { id: "avalanche", name: "Avalanche Fuji",    short: "AVAX", color: "#E84142", icon: "▲" },
 ];
 
 const ASSETS: Asset[] = [
@@ -55,15 +56,12 @@ const ASSETS: Asset[] = [
 const BRIDGE_FEE_RATE = 0.003; // 0.3 %
 
 const BRIDGE_TIMES: Record<string, string> = {
-  "stellar-ethereum": "5–10 min",
-  "stellar-polygon":  "3–5 min",
-  "stellar-bsc":      "3–5 min",
-  "stellar-base":     "5–10 min",
-  "stellar-solana":   "2–4 min",
-  "ethereum-polygon": "3–5 min",
-  "ethereum-bsc":     "3–5 min",
-  "ethereum-base":    "1–2 min",
-  "ethereum-solana":  "5–10 min",
+  "stellar-ethereum":   "30s–2 min",
+  "stellar-solana":     "30s–2 min",
+  "stellar-avalanche":  "30s–2 min",
+  "ethereum-stellar":   "1–3 min",
+  "solana-stellar":     "1–3 min",
+  "avalanche-stellar":  "1–3 min",
 };
 
 function getBridgeTime(from: string, to: string) {
@@ -148,13 +146,15 @@ function BottomSheet({
 export const dynamic = "force-dynamic";
 
 export default function BridgePage() {
-  const [fromChain, setFromChain] = useState<Chain>(CHAINS[0]);
-  const [toChain,   setToChain]   = useState<Chain>(CHAINS[1]);
-  const [asset,     setAsset]     = useState<Asset>(ASSETS[0]);
-  const [amount,    setAmount]    = useState("");
-  const [step,      setStep]      = useState<Step>("form");
-  const [progress,  setProgress]  = useState(0);
-  const [txHash,    setTxHash]    = useState<string | null>(null);
+  const [fromChain,   setFromChain]   = useState<Chain>(CHAINS[0]);
+  const [toChain,     setToChain]     = useState<Chain>(CHAINS[1]);
+  const [asset,       setAsset]       = useState<Asset>(ASSETS[0]);
+  const [amount,      setAmount]      = useState("");
+  const [step,        setStep]        = useState<Step>("form");
+  const [progress,    setProgress]    = useState(0);
+  const [txHash,      setTxHash]      = useState<string | null>(null);
+  const [explorerUrl, setExplorerUrl] = useState<string | null>(null);
+  const [error,       setError]       = useState<string | null>(null);
 
   const [showFrom,  setShowFrom]  = useState(false);
   const [showTo,    setShowTo]    = useState(false);
@@ -181,25 +181,76 @@ export default function BridgePage() {
   const handleBridge = async () => {
     setStep("processing");
     setProgress(0);
+    setError(null);
 
-    const milestones = [0, 25, 50, 75, 100];
-    for (let i = 0; i < milestones.length; i++) {
-      await new Promise<void>((r) => setTimeout(r, 700 + i * 450));
-      setProgress(milestones[i]);
+    // Get the user's wallet address for destAddress (demo: reuse Stellar address)
+    const destAddress = (() => {
+      try {
+        const raw = typeof window !== "undefined"
+          ? localStorage.getItem("nexusfi_wallet")
+          : null;
+        return raw ? (JSON.parse(raw).address ?? "") : "";
+      } catch {
+        return "";
+      }
+    })() || "GBZXN3PIRZGNMHGA7MUUUF4GWPY5AYPV6LY4UV2GL6VJGIQRXFDNMADI";
+
+    try {
+      // Kick off the API call immediately — it does real on-chain work
+      const apiPromise = api.post<{
+        success: boolean;
+        bridge: { burnTxHash?: string; mintTxHash?: string };
+        explorerUrls: { burn?: string; mint?: string };
+        demoNotice?: string;
+      }>("/api/bridge/execute", {
+        sourceChain: fromChain.id,
+        destChain: toChain.id,
+        token: asset.symbol,
+        amount: num,
+        destAddress,
+      });
+
+      // Animate progress milestones while waiting for the backend
+      await new Promise<void>((r) => setTimeout(r, 700));
+      setProgress(25);
+      await new Promise<void>((r) => setTimeout(r, 900));
+      setProgress(50);
+      await new Promise<void>((r) => setTimeout(r, 800));
+      setProgress(75);
+
+      // Wait for the real result
+      const result = await apiPromise;
+
+      setProgress(100);
+
+      const hash = result.bridge.burnTxHash ?? result.bridge.mintTxHash ?? null;
+      setTxHash(hash);
+      setExplorerUrl(result.explorerUrls.burn ?? result.explorerUrls.mint ?? null);
+      setStep("done");
+    } catch (err: any) {
+      let msg = "Bridge failed. Please try again.";
+      if (err instanceof ApiError) {
+        try {
+          const parsed = JSON.parse(err.message);
+          msg = parsed.error ?? parsed.message ?? err.message;
+        } catch {
+          msg = err.message;
+        }
+      } else if (err?.message) {
+        msg = err.message;
+      }
+      setError(msg);
+      setStep("form");
+      setProgress(0);
     }
-
-    setTxHash(
-      `0x${Math.random().toString(16).slice(2, 18)}${Math.random()
-        .toString(16)
-        .slice(2, 10)}`
-    );
-    setStep("done");
   };
 
   const reset = useCallback(() => {
     setStep("form");
     setAmount("");
     setTxHash(null);
+    setExplorerUrl(null);
+    setError(null);
     setProgress(0);
   }, []);
 
@@ -432,10 +483,18 @@ export default function BridgePage() {
               )}
             </AnimatePresence>
 
+            {/* Error banner */}
+            {error && (
+              <div className="flex items-start gap-2.5 p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-xs text-red-400">
+                <AlertCircle size={13} className="shrink-0 mt-0.5" />
+                <span>{error}</span>
+              </div>
+            )}
+
             {/* CTA */}
             <button
               onClick={handleBridge}
-              disabled={!amount || num <= 0}
+              disabled={!amount || num <= 0 || fromChain.id === toChain.id}
               className="w-full py-4 rounded-xl bg-accent text-bg-primary font-semibold flex items-center justify-center gap-2 disabled:opacity-30 disabled:cursor-not-allowed transition-opacity text-sm tracking-wide"
             >
               <ArrowLeftRight size={16} />
@@ -603,10 +662,18 @@ export default function BridgePage() {
             </div>
 
             {txHash && (
-              <button className="flex items-center gap-1.5 text-xs text-accent font-medium tracking-wide hover:underline">
+              <a
+                href={
+                  explorerUrl ??
+                  `https://stellar.expert/explorer/testnet/tx/${txHash}`
+                }
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1.5 text-xs text-accent font-medium tracking-wide hover:underline"
+              >
                 <ExternalLink size={12} />
                 View on Explorer
-              </button>
+              </a>
             )}
 
             <button
