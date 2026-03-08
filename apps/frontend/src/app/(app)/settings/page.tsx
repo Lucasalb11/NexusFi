@@ -44,6 +44,14 @@ export default function SettingsPage() {
   const [newWalletName, setNewWalletName] = useState("");
   const walletAddress = address ?? "";
 
+  // Build the display list: always include the active address even if server session expired
+  const displayWallets =
+    wallets.length > 0
+      ? wallets
+      : walletAddress
+      ? [{ keyId: "local", contractId: walletAddress, createdAt: "" }]
+      : [];
+
   const copyAddress = async () => {
     await navigator.clipboard.writeText(walletAddress);
     setCopied(true);
@@ -129,40 +137,39 @@ export default function SettingsPage() {
           Wallets
         </h3>
         <div className="glass rounded-xl overflow-hidden">
-          {wallets.length === 0 ? (
-            <div className="p-4 text-sm text-text-muted text-center">
-              Apenas a wallet ativa é exibida. Faça login para ver todas.
-            </div>
-          ) : (
-            wallets.map((w, i) => {
-              const isActive = w.contractId === walletAddress;
-              return (
-                <button
-                  key={w.keyId}
-                  type="button"
-                  onClick={() => !isActive && setActiveWallet(w.contractId)}
-                  className="w-full flex items-center gap-3 p-4 hover:bg-bg-elevated/40 transition-colors text-left disabled:opacity-70"
-                  style={{
-                    borderTop: i > 0 ? "1px solid rgb(var(--color-border) / 0.2)" : undefined,
-                  }}
-                >
-                  <Wallet size={16} className="text-text-muted shrink-0" />
-                  <span className="flex-1 text-sm font-mono truncate">
-                    {shortenAddress(w.contractId, 8)}
-                  </span>
-                  {isActive ? (
-                    <span className="flex items-center gap-1.5 text-[11px] text-success">
-                      <CheckCircle size={12} />
-                      Ativa
-                    </span>
-                  ) : (
-                    <span className="text-[11px] text-accent">Usar esta</span>
+          {displayWallets.map((w, i) => {
+            const isActive = w.contractId === walletAddress;
+            return (
+              <button
+                key={w.keyId}
+                type="button"
+                onClick={() => !isActive && setActiveWallet(w.contractId)}
+                className="w-full flex items-center gap-3 p-4 hover:bg-bg-elevated/40 transition-colors text-left"
+                style={{
+                  borderTop: i > 0 ? "1px solid rgb(var(--color-border) / 0.2)" : undefined,
+                }}
+              >
+                <Wallet size={16} className="text-text-muted shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-mono truncate">{shortenAddress(w.contractId, 8)}</p>
+                  {w.createdAt && (
+                    <p className="text-[10px] text-text-muted mt-0.5">
+                      {new Date(w.createdAt).toLocaleDateString()}
+                    </p>
                   )}
-                  <ChevronRight size={13} className="text-text-muted shrink-0" />
-                </button>
-              );
-            })
-          )}
+                </div>
+                {isActive ? (
+                  <span className="flex items-center gap-1.5 text-[11px] text-success shrink-0">
+                    <CheckCircle size={12} />
+                    Ativa
+                  </span>
+                ) : (
+                  <span className="text-[11px] text-accent shrink-0">Usar esta</span>
+                )}
+                <ChevronRight size={13} className="text-text-muted shrink-0" />
+              </button>
+            );
+          })}
           <button
             type="button"
             onClick={() => setShowAddWallet(true)}

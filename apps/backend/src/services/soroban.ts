@@ -95,14 +95,21 @@ export async function invokeContractWrite(
     throw new Error(`Transaction failed: ${sendResult.status}`);
   }
 
+  const MAX_POLL_ATTEMPTS = 30; // 30s timeout
   let getResult = await sorobanRpc.getTransaction(sendResult.hash);
-  while (getResult.status === "NOT_FOUND") {
+  let attempts = 0;
+  while (getResult.status === "NOT_FOUND" && attempts < MAX_POLL_ATTEMPTS) {
     await new Promise((r) => setTimeout(r, 1000));
     getResult = await sorobanRpc.getTransaction(sendResult.hash);
+    attempts++;
   }
 
   if (getResult.status === "SUCCESS") {
     return { hash: sendResult.hash, result: getResult };
+  }
+
+  if (getResult.status === "NOT_FOUND") {
+    throw new Error(`Transaction ${sendResult.hash} timed out after ${MAX_POLL_ATTEMPTS}s`);
   }
 
   throw new Error(`Transaction ${sendResult.hash} failed: ${getResult.status}`);
@@ -149,10 +156,13 @@ export async function submitSignedTransaction(signedXdr: string): Promise<{ hash
     throw new Error(`Transaction failed: ${sendResult.status}`);
   }
 
+  const MAX_POLL = 30;
   let getResult = await sorobanRpc.getTransaction(sendResult.hash);
-  while (getResult.status === "NOT_FOUND") {
+  let poll = 0;
+  while (getResult.status === "NOT_FOUND" && poll < MAX_POLL) {
     await new Promise((r) => setTimeout(r, 1000));
     getResult = await sorobanRpc.getTransaction(sendResult.hash);
+    poll++;
   }
 
   if (getResult.status === "SUCCESS") {

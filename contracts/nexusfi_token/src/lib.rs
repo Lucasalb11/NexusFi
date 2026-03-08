@@ -68,6 +68,56 @@ impl NexusfiToken {
         Ok(())
     }
 
+    /// Admin-only burn: allows the admin to burn tokens from any address without
+    /// requiring the holder's authorization. Used by the backend bridge service.
+    pub fn admin_burn(env: Env, from: Address, amount: i128) -> Result<(), TokenError> {
+        let admin = storage::get_admin(&env)?;
+        admin.require_auth();
+
+        if amount <= 0 {
+            return Err(TokenError::InvalidAmount);
+        }
+
+        let balance = storage::get_balance(&env, &from);
+        if balance < amount {
+            return Err(TokenError::InsufficientBalance);
+        }
+        storage::set_balance(&env, &from, balance - amount);
+
+        let supply = storage::get_total_supply(&env);
+        storage::set_total_supply(&env, supply - amount);
+
+        event::burn(&env, &from, amount);
+        Ok(())
+    }
+
+    /// Admin-only transfer: allows the admin to move tokens between addresses
+    /// without requiring the sender's authorization. Used by backend operations.
+    pub fn admin_transfer(env: Env, from: Address, to: Address, amount: i128) -> Result<(), TokenError> {
+        let admin = storage::get_admin(&env)?;
+        admin.require_auth();
+
+        if amount <= 0 {
+            return Err(TokenError::InvalidAmount);
+        }
+
+        let from_balance = storage::get_balance(&env, &from);
+        if from_balance < amount {
+            return Err(TokenError::InsufficientBalance);
+        }
+
+        let to_balance = storage::get_balance(&env, &to);
+        let new_to = to_balance
+            .checked_add(amount)
+            .ok_or(TokenError::OverflowError)?;
+
+        storage::set_balance(&env, &from, from_balance - amount);
+        storage::set_balance(&env, &to, new_to);
+
+        event::transfer(&env, &from, &to, amount);
+        Ok(())
+    }
+
     pub fn burn(env: Env, from: Address, amount: i128) -> Result<(), TokenError> {
         from.require_auth();
 

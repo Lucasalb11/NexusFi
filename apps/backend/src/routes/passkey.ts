@@ -1,5 +1,7 @@
 import { Router } from "express";
 import * as StellarSdk from "@stellar/stellar-sdk";
+import { mint } from "../services/tokens.js";
+import { fundTestnetAccount } from "../services/stellar.js";
 
 const router: Router = Router();
 
@@ -71,15 +73,45 @@ router.post("/register", async (req, res) => {
       req.session!.userId = userId;
     }
 
-    walletStore.set(keyId, {
-      userId,
-      contractId,
-      createdAt: new Date().toISOString(),
-    });
+    const createdAt = new Date().toISOString();
+    walletStore.set(keyId, { userId, contractId, createdAt });
 
     console.log(`Passkey wallet registered: ${keyId} -> ${contractId} (user: ${userId})`);
 
-    res.json({ success: true, keyId, contractId });
+    // Auto-fund and auto-mint so the new wallet has tokens to use immediately
+    const airdropResults: Record<string, any> = {};
+
+    // Fund with testnet XLM via Friendbot (needed for transaction fees)
+    try {
+      await fundTestnetAccount(contractId);
+      airdropResults.xlmFunded = true;
+      console.log(`Friendbot funded: ${contractId}`);
+    } catch (err: any) {
+      console.warn(`Friendbot failed for ${contractId}:`, err.message);
+      airdropResults.xlmFunded = false;
+    }
+
+    // Mint 10,000 nUSD to new wallet
+    try {
+      const { hash } = await mint("nUSD", contractId, 10_000);
+      airdropResults.nUSD = { minted: 10_000, txHash: hash };
+      console.log(`Minted 10,000 nUSD to ${contractId} — tx: ${hash}`);
+    } catch (err: any) {
+      console.warn(`nUSD mint failed for ${contractId}:`, err.message);
+      airdropResults.nUSD = { error: err.message };
+    }
+
+    // Mint 10,000 nBRL to new wallet
+    try {
+      const { hash } = await mint("nBRL", contractId, 10_000);
+      airdropResults.nBRL = { minted: 10_000, txHash: hash };
+      console.log(`Minted 10,000 nBRL to ${contractId} — tx: ${hash}`);
+    } catch (err: any) {
+      console.warn(`nBRL mint failed for ${contractId}:`, err.message);
+      airdropResults.nBRL = { error: err.message };
+    }
+
+    res.json({ success: true, keyId, contractId, createdAt, airdrop: airdropResults });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }

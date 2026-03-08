@@ -78,16 +78,22 @@ export function WalletProvider({ children }: { children: ReactNode }) {
   const refreshWallets = useCallback(async () => {
     try {
       const data = await api.get<{ wallets: WalletEntry[] }>("/api/passkey/wallets");
-      setWallets(data.wallets ?? []);
+      if (data.wallets && data.wallets.length > 0) {
+        setWallets(data.wallets);
+      }
+      // If server returns empty (session expired), keep existing wallets in state
     } catch {
-      setWallets([]);
+      // Keep existing wallets — don't blank out the list on network error
     }
   }, []);
 
-  const persist = useCallback((addr: string, kid: string) => {
+  const persist = useCallback((addr: string, kid: string, createdAt?: string) => {
     setAddress(addr);
     setKeyId(kid);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ address: addr, keyId: kid }));
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({ address: addr, keyId: kid, createdAt: createdAt ?? new Date().toISOString() }),
+    );
   }, []);
 
   const setActiveWallet = useCallback(
@@ -107,6 +113,14 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         const data = JSON.parse(saved);
         setAddress(data.address ?? null);
         setKeyId(data.keyId ?? null);
+        // Seed wallets from localStorage so the list shows immediately before the server responds
+        if (data.address && data.keyId) {
+          setWallets([{
+            keyId: data.keyId,
+            contractId: data.address,
+            createdAt: data.createdAt ?? new Date().toISOString(),
+          }]);
+        }
       } catch {
         localStorage.removeItem(STORAGE_KEY);
       }
@@ -146,11 +160,11 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     try {
       const xdr = signedTx.toXDR();
       await api.post("/api/passkey/submit", { xdr });
-      await api.post("/api/passkey/register", {
+      const regResult = await api.post<{ createdAt?: string }>("/api/passkey/register", {
         keyId: keyIdBase64,
         contractId,
       });
-      persist(contractId, keyIdBase64);
+      persist(contractId, keyIdBase64, regResult.createdAt);
       await refreshWallets();
       setIsLoading(false);
       return contractId;
@@ -226,11 +240,11 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     try {
       const xdr = signedTx.toXDR();
       await api.post("/api/passkey/submit", { xdr });
-      await api.post("/api/passkey/register", {
+      const regResult = await api.post<{ createdAt?: string }>("/api/passkey/register", {
         keyId: keyIdBase64,
         contractId,
       });
-      persist(contractId, keyIdBase64);
+      persist(contractId, keyIdBase64, regResult.createdAt);
       await refreshWallets();
       setIsLoading(false);
       return contractId;

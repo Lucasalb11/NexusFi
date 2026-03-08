@@ -89,6 +89,11 @@ export async function mint(
   return { hash, rawAmount: rawAmount.toString() };
 }
 
+/**
+ * Burn tokens from any address using the admin key (calls admin_burn on-chain).
+ * Requires the contract to have admin_burn deployed. After upgrading the contract
+ * WASM with admin_burn, this will execute a real on-chain burn.
+ */
 export async function burn(
   symbol: TokenSymbol,
   from: string,
@@ -96,13 +101,17 @@ export async function burn(
 ): Promise<{ hash: string; rawAmount: string }> {
   const token = getToken(symbol);
   const rawAmount = toRaw(amount, token.decimals);
-  const { hash } = await invokeContractWrite(token.contractId, "burn", [
+  const { hash } = await invokeContractWrite(token.contractId, "admin_burn", [
     scVal.address(from),
     scVal.i128(rawAmount),
   ]);
   return { hash, rawAmount: rawAmount.toString() };
 }
 
+/**
+ * Transfer tokens between addresses using the admin key (calls admin_transfer on-chain).
+ * Requires the contract to have admin_transfer deployed.
+ */
 export async function transfer(
   symbol: TokenSymbol,
   from: string,
@@ -111,7 +120,7 @@ export async function transfer(
 ): Promise<{ hash: string; rawAmount: string }> {
   const token = getToken(symbol);
   const rawAmount = toRaw(amount, token.decimals);
-  const { hash } = await invokeContractWrite(token.contractId, "transfer", [
+  const { hash } = await invokeContractWrite(token.contractId, "admin_transfer", [
     scVal.address(from),
     scVal.address(to),
     scVal.i128(rawAmount),
