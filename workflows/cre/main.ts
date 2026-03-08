@@ -18,6 +18,16 @@
  * WF3: Risk Monitor             (Risk & Compliance)
  * WF4: Privacy Credit Check     (Privacy)
  * WF5: Cross-Chain Bridge       (DeFi & Tokenization + CRE & AI)
+ *
+ * ============================================================================
+ * NexusFi CRE Workflows — Trigger Index Mapping
+ *
+ * Trigger 0 (1 in interactive) → WF1: Proof of Reserve
+ * Trigger 1 (2 in interactive) → WF2: AI Credit Scoring
+ * Trigger 2 (3 in interactive) → WF3: Risk Monitor
+ * Trigger 3 (4 in interactive) → WF4: Privacy Credit Check
+ * Trigger 4 (5 in interactive) → WF5: Cross-Chain Bridge
+ * ============================================================================
  */
 
 import {
@@ -112,6 +122,15 @@ interface BridgeAttestation {
   timestamp: number;
 }
 
+interface CreditEligibilityResult {
+  eligible: boolean;
+  reason: string;
+  confidential: boolean;
+  rawDataOnChain: boolean;
+  credentialsOnChain: boolean;
+  timestamp: number;
+}
+
 // ============================================================================
 // WF1: Proof of Reserve (DeFi & Tokenization Track)
 // ============================================================================
@@ -128,11 +147,12 @@ const fetchReserveXlm = (
   reserveAddress: string,
 ): number => {
   const response = sendRequester
-    .sendRequest({ url: `${HORIZON_TESTNET}/accounts/${reserveAddress}` })
+    .sendRequest({ url: `${HORIZON_TESTNET}/accounts/${reserveAddress}`, method: "GET" })
     .result();
 
   if (!ok(response)) {
-    throw new Error(`Horizon request failed: ${response.statusCode}`);
+    // Account not found or Horizon unavailable — return 0 so simulation continues
+    return 0;
   }
 
   const data = json(response) as StellarAccountResponse;
@@ -144,6 +164,7 @@ const fetchXlmPrice = (sendRequester: HTTPSendRequester): number => {
   const response = sendRequester
     .sendRequest({
       url: "https://api.coingecko.com/api/v3/simple/price?ids=stellar&vs_currencies=usd",
+      method: "GET",
     })
     .result();
 
@@ -232,6 +253,7 @@ const fetchTxMetrics = (
   const response = sendRequester
     .sendRequest({
       url: `${HORIZON_TESTNET}/accounts/${address}/transactions?order=desc&limit=50`,
+      method: "GET",
     })
     .result();
 
@@ -346,7 +368,7 @@ const fetchRiskMetrics = (
   reserveAddress: string,
 ): RiskReport => {
   const accountResp = sendRequester
-    .sendRequest({ url: `${HORIZON_TESTNET}/accounts/${reserveAddress}` })
+    .sendRequest({ url: `${HORIZON_TESTNET}/accounts/${reserveAddress}`, method: "GET" })
     .result();
 
   let reserveXlm = 0;
@@ -359,6 +381,7 @@ const fetchRiskMetrics = (
   const priceResp = sendRequester
     .sendRequest({
       url: "https://api.coingecko.com/api/v3/simple/price?ids=stellar&vs_currencies=usd&include_24hr_change=true",
+      method: "GET",
     })
     .result();
 
@@ -452,7 +475,7 @@ const checkCreditEligibility = (
   sendRequester: HTTPSendRequester,
   address: string,
   apiKey: string, // injected from CRE secrets — never hardcoded
-): string => {
+): CreditEligibilityResult => {
   // Production: POST to credit bureau API with TEE-secured credentials
   // const response = sendRequester.sendRequest({
   //   url: "https://api.credit-bureau.example/v1/eligibility",
@@ -468,18 +491,19 @@ const checkCreditEligibility = (
   const response = sendRequester
     .sendRequest({
       url: `${HORIZON_TESTNET}/accounts/${address}`,
+      method: "GET",
     })
     .result();
 
   if (!ok(response)) {
-    return JSON.stringify({
+    return {
       eligible: false,
       reason: "account_not_found",
       confidential: true,
       rawDataOnChain: false,
       credentialsOnChain: false,
       timestamp: Date.now(),
-    });
+    };
   }
 
   const data = json(response) as StellarAccountResponse;
@@ -488,14 +512,14 @@ const checkCreditEligibility = (
     (b) => b.asset_type === "native" && parseFloat(b.balance) > 10,
   );
 
-  return JSON.stringify({
+  return {
     eligible,
     reason: eligible ? "sufficient_on_chain_history" : "insufficient_on_chain_history",
     confidential: true,
     rawDataOnChain: false,    // individual score / bureau data never on-chain
     credentialsOnChain: false, // API key never on-chain
     timestamp: Date.now(),
-  });
+  };
 };
 
 const onPrivacyCreditCheck = (runtime: Runtime<Config>): string => {
@@ -504,8 +528,9 @@ const onPrivacyCreditCheck = (runtime: Runtime<Config>): string => {
 
   // Retrieve API key from CRE secrets (TEE-secured)
   // In production: corresponds to `secrets.yaml` entry for CREDIT_API_KEY
-  // For simulation without a real key, getSecret returns empty string
-  const apiKey = runtime.getSecret("CREDIT_API_KEY").result();
+  // For simulation without a real key, getSecret returns an empty value
+  const apiKeySecret = runtime.getSecret({ id: "CREDIT_API_KEY", namespace: "nexusfi" }).result();
+  const apiKey = apiKeySecret.value ?? "";
 
   const { reserveAddress } = runtime.config;
 
@@ -517,7 +542,7 @@ const onPrivacyCreditCheck = (runtime: Runtime<Config>): string => {
     .sendRequest(
       runtime,
       checkCreditEligibility,
-      ConsensusAggregationByFields<ReturnType<typeof JSON.parse>>({
+      ConsensusAggregationByFields<CreditEligibilityResult>({
         eligible: identical,
         reason: identical,
         confidential: identical,
@@ -558,6 +583,7 @@ const verifyBurnOnStellar = (
   const response = sendRequester
     .sendRequest({
       url: `${HORIZON_TESTNET}/accounts/${accountAddress}/transactions?order=desc&limit=5`,
+      method: "GET",
     })
     .result();
 
@@ -590,7 +616,7 @@ const verifyDestChainReady = (
   sendRequester: HTTPSendRequester,
   destRpc: string,
 ): number => {
-  const response = sendRequester.sendRequest({ url: destRpc }).result();
+  const response = sendRequester.sendRequest({ url: destRpc, method: "GET" }).result();
   return ok(response) ? 1 : 0;
 };
 

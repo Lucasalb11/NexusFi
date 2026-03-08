@@ -2,7 +2,7 @@
 
 > **[Chainlink Convergence Hackathon](https://chain.link/hackathon)** · Feb 6 – Mar 8, 2026 · Targeting 4 tracks · $69K+ in prizes
 
-[![Live App](https://img.shields.io/badge/Live%20App-nexusfi.vercel.app-BFA36B?style=for-the-badge)](https://nexusfi-production-aeb5.up.railway.app)
+[![Live App](https://img.shields.io/badge/Live%20App-nexusfi.up.railway.app-BFA36B?style=for-the-badge)](https://nexusfi-production-aeb5.up.railway.app)
 [![GitHub](https://img.shields.io/badge/GitHub-Lucasalb11%2FNexusFi-181717?style=for-the-badge&logo=github)](https://github.com/Lucasalb11/NexusFi)
 [![Demo Video](https://img.shields.io/badge/Demo%20Video-Watch%20Now-FF0000?style=for-the-badge&logo=youtube)](#demo-video)
 
@@ -24,7 +24,7 @@ We bring Nubank-style banking to the 1.4 billion unbanked adults who have smartp
 |-------------|--------|------|
 | 3–5 min demo video | ✅ | [Watch on YouTube](#demo-video) |
 | Public GitHub repository | ✅ | [github.com/Lucasalb11/NexusFi](https://github.com/Lucasalb11/NexusFi) |
-| Live deployed application | ✅ | [nexusfi.vercel.app](https://nexusfi.vercel.app) |
+| Live deployed application | ✅ | [nexusfi-production-aeb5.up.railway.app](https://nexusfi-production-aeb5.up.railway.app) |
 | CRE workflow simulation | ✅ | [Simulate in 3 commands](#cre-workflow-simulation) |
 | README with all Chainlink files | ✅ | [Files Using Chainlink](#files-using-chainlink) |
 | Soroban contracts on Stellar Testnet | ✅ | [4 contracts deployed](#live-contracts-stellar-testnet) |
@@ -66,7 +66,7 @@ The demo covers:
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│             NexusFi Mobile PWA (Next.js 14 · Vercel)           │
+│             NexusFi Mobile PWA (Next.js 14 · Railway)           │
 │    Dashboard │ Wallet │ Credit Card │ Bridge │ Confidential      │
 └───────┬──────────────────────────────────────┬──────────────────┘
         │ REST API                             │ MoonPay Widget
@@ -394,7 +394,7 @@ NexusFi targets **financial inclusion** — specifically the 1.4 billion adults 
 ```
 NexusFi/
 ├── apps/
-│   ├── frontend/              # Next.js 14 PWA (mobile-first, deployed on Vercel)
+│   ├── frontend/              # Next.js 14 PWA (mobile-first, deployed on Railway)
 │   │   └── src/app/           # / (landing) · /governance · /dashboard · /wallet
 │   │                          # /credit · /bridge · /confidential · /settings
 │   └── backend/               # Express API server

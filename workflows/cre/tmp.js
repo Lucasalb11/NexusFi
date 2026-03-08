@@ -13858,9 +13858,9 @@ var configSchema = exports_external.object({
 });
 var HORIZON_TESTNET = "https://horizon-testnet.stellar.org";
 var fetchReserveXlm = (sendRequester, reserveAddress) => {
-  const response = sendRequester.sendRequest({ method: "GET", url: `${HORIZON_TESTNET}/accounts/${reserveAddress}` }).result();
+  const response = sendRequester.sendRequest({ url: `${HORIZON_TESTNET}/accounts/${reserveAddress}`, method: "GET" }).result();
   if (!ok(response)) {
-    throw new Error(`Horizon request failed: ${response.statusCode}`);
+    return 0;
   }
   const data = json(response);
   const native = data.balances.find((b) => b.asset_type === "native");
@@ -13868,8 +13868,8 @@ var fetchReserveXlm = (sendRequester, reserveAddress) => {
 };
 var fetchXlmPrice = (sendRequester) => {
   const response = sendRequester.sendRequest({
-    method: "GET",
-    url: "https://api.coingecko.com/api/v3/simple/price?ids=stellar&vs_currencies=usd"
+    url: "https://api.coingecko.com/api/v3/simple/price?ids=stellar&vs_currencies=usd",
+    method: "GET"
   }).result();
   if (!ok(response)) {
     return 0.12;
@@ -13902,8 +13902,8 @@ var onProofOfReserve = (runtime2) => {
 };
 var fetchTxMetrics = (sendRequester, address) => {
   const response = sendRequester.sendRequest({
-    method: "GET",
-    url: `${HORIZON_TESTNET}/accounts/${address}/transactions?order=desc&limit=50`
+    url: `${HORIZON_TESTNET}/accounts/${address}/transactions?order=desc&limit=50`,
+    method: "GET"
   }).result();
   if (!ok(response)) {
     return { txCount: 0, accountAgeDays: 0 };
@@ -13953,7 +13953,7 @@ var onAICreditScoring = (runtime2) => {
   return JSON.stringify(creditResult);
 };
 var fetchRiskMetrics = (sendRequester, reserveAddress) => {
-  const accountResp = sendRequester.sendRequest({ method: "GET", url: `${HORIZON_TESTNET}/accounts/${reserveAddress}` }).result();
+  const accountResp = sendRequester.sendRequest({ url: `${HORIZON_TESTNET}/accounts/${reserveAddress}`, method: "GET" }).result();
   let reserveXlm = 0;
   if (ok(accountResp)) {
     const data = json(accountResp);
@@ -13961,8 +13961,8 @@ var fetchRiskMetrics = (sendRequester, reserveAddress) => {
     reserveXlm = native ? parseFloat(native.balance) : 0;
   }
   const priceResp = sendRequester.sendRequest({
-    method: "GET",
-    url: "https://api.coingecko.com/api/v3/simple/price?ids=stellar&vs_currencies=usd&include_24hr_change=true"
+    url: "https://api.coingecko.com/api/v3/simple/price?ids=stellar&vs_currencies=usd&include_24hr_change=true",
+    method: "GET"
   }).result();
   let xlmPrice = 0.12;
   let priceDeviation = 0;
@@ -14007,34 +14007,35 @@ var onRiskMonitor = (runtime2) => {
 };
 var checkCreditEligibility = (sendRequester, address, apiKey) => {
   const response = sendRequester.sendRequest({
-    method: "GET",
-    url: `${HORIZON_TESTNET}/accounts/${address}`
+    url: `${HORIZON_TESTNET}/accounts/${address}`,
+    method: "GET"
   }).result();
   if (!ok(response)) {
-    return JSON.stringify({
+    return {
       eligible: false,
       reason: "account_not_found",
       confidential: true,
       rawDataOnChain: false,
       credentialsOnChain: false,
       timestamp: Date.now()
-    });
+    };
   }
   const data = json(response);
   const eligible = data.balances.some((b) => b.asset_type === "native" && parseFloat(b.balance) > 10);
-  return JSON.stringify({
+  return {
     eligible,
     reason: eligible ? "sufficient_on_chain_history" : "insufficient_on_chain_history",
     confidential: true,
     rawDataOnChain: false,
     credentialsOnChain: false,
     timestamp: Date.now()
-  });
+  };
 };
 var onPrivacyCreditCheck = (runtime2) => {
   runtime2.log("WF4: Privacy Credit Check — confidential eligibility verification");
   runtime2.log("WF4: Credentials retrieved from CRE secrets (never on-chain)");
-  const apiKey = runtime2.getSecret("CREDIT_API_KEY").result();
+  const apiKeySecret = runtime2.getSecret({ id: "CREDIT_API_KEY", namespace: "nexusfi" }).result();
+  const apiKey = apiKeySecret.value ?? "";
   const { reserveAddress } = runtime2.config;
   const httpClient = new ClientCapability;
   const result = httpClient.sendRequest(runtime2, checkCreditEligibility, ConsensusAggregationByFields({
@@ -14051,8 +14052,8 @@ var onPrivacyCreditCheck = (runtime2) => {
 };
 var verifyBurnOnStellar = (sendRequester, accountAddress) => {
   const response = sendRequester.sendRequest({
-    method: "GET",
-    url: `${HORIZON_TESTNET}/accounts/${accountAddress}/transactions?order=desc&limit=5`
+    url: `${HORIZON_TESTNET}/accounts/${accountAddress}/transactions?order=desc&limit=5`,
+    method: "GET"
   }).result();
   let burnVerified = 0;
   let amount = 0;
@@ -14076,7 +14077,7 @@ var verifyBurnOnStellar = (sendRequester, accountAddress) => {
   };
 };
 var verifyDestChainReady = (sendRequester, destRpc) => {
-  const response = sendRequester.sendRequest({ method: "GET", url: destRpc }).result();
+  const response = sendRequester.sendRequest({ url: destRpc, method: "GET" }).result();
   return ok(response) ? 1 : 0;
 };
 var onCrossChainBridge = (runtime2) => {
