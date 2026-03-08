@@ -200,6 +200,7 @@ export default function BridgePage() {
       const apiPromise = api.post<{
         success: boolean;
         bridge: { burnTxHash?: string; mintTxHash?: string };
+        stellarExplorerUrl?: string;
         explorerUrls: { burn?: string; mint?: string };
         demoNotice?: string;
       }>("/api/bridge/execute", {
@@ -225,7 +226,13 @@ export default function BridgePage() {
 
       const hash = result.bridge.burnTxHash ?? result.bridge.mintTxHash ?? null;
       setTxHash(hash);
-      setExplorerUrl(result.explorerUrls.burn ?? result.explorerUrls.mint ?? null);
+      // stellarExplorerUrl is always the real on-chain Stellar tx hash
+      setExplorerUrl(
+        result.stellarExplorerUrl ??
+        result.explorerUrls.burn ??
+        result.explorerUrls.mint ??
+        null,
+      );
       setStep("done");
     } catch (err: any) {
       let msg = "Bridge failed. Please try again.";

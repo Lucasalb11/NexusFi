@@ -11,11 +11,11 @@ import {
   ScanLine,
   QrCode,
   X,
+  Loader2,
 } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import clsx from "clsx";
-import TransactionList from "@/components/TransactionList";
-import { MOCK_TRANSACTIONS } from "@/lib/mock-data";
+import TransactionList, { type Transaction } from "@/components/TransactionList";
 import { useWallet } from "@/context/WalletContext";
 import { shortenAddress } from "@/lib/format";
 import { api } from "@/lib/api";
@@ -113,11 +113,49 @@ export default function WalletPage() {
   const [scannerError, setScannerError] = useState<string | null>(null);
   const [scannerStatus, setScannerStatus] = useState("Align the QR code inside camera frame");
   const [scanSuccessNotice, setScanSuccessNotice] = useState<string | null>(null);
+  const [txHistory, setTxHistory] = useState<Transaction[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [txSearch, setTxSearch] = useState("");
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const scanIntervalRef = useRef<number | null>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const isReadingRef = useRef(false);
+
+  // Load real transaction history from Horizon
+  useEffect(() => {
+    if (!walletAddress) return;
+    setHistoryLoading(true);
+    api
+      .get<{ transactions: Array<{ id: string; hash: string; created_at: string; source_account: string; successful: boolean }> }>(
+        "/api/wallet/transactions?limit=50",
+      )
+      .then((data) => {
+        const mapped: Transaction[] = (data.transactions ?? []).map((tx) => ({
+          id: tx.id,
+          type: tx.source_account === walletAddress ? "send" : "receive",
+          amount: 0, // Horizon doesn't expose amount without parsing operations
+          counterparty: tx.source_account === walletAddress ? "Outgoing" : tx.source_account,
+          timestamp: tx.created_at,
+          status: tx.successful ? "completed" : "failed",
+          hash: tx.hash,
+        }));
+        setTxHistory(mapped);
+      })
+      .catch(() => setTxHistory([]))
+      .finally(() => setHistoryLoading(false));
+  }, [walletAddress]);
+
+  const filteredTxHistory = useMemo(() => {
+    if (!txSearch) return txHistory;
+    const q = txSearch.toLowerCase();
+    return txHistory.filter(
+      (tx) =>
+        tx.hash?.includes(q) ||
+        tx.counterparty.toLowerCase().includes(q) ||
+        tx.timestamp.includes(q),
+    );
+  }, [txHistory, txSearch]);
 
   const receiveQrPayload = useMemo(() => {
     const amount = Number(requestAmount);
@@ -288,11 +326,20 @@ export default function WalletPage() {
               <Search size={14} className="text-text-muted" />
               <input
                 type="text"
-                placeholder="Search transactions..."
-                className="flex-1 text-sm outline-none placeholder:text-text-muted"
+                value={txSearch}
+                onChange={(e) => setTxSearch(e.target.value)}
+                placeholder="Search by hash or address..."
+                className="flex-1 text-sm outline-none placeholder:text-text-muted bg-transparent"
               />
             </div>
-            <TransactionList transactions={MOCK_TRANSACTIONS} />
+            {historyLoading ? (
+              <div className="flex items-center justify-center py-10 text-text-muted gap-2 text-sm">
+                <Loader2 size={16} className="animate-spin" />
+                Loading transactions...
+              </div>
+            ) : (
+              <TransactionList transactions={filteredTxHistory} />
+            )}
           </motion.div>
         )}
 

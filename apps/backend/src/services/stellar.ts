@@ -2,6 +2,10 @@ import {
   Horizon,
   rpc,
   Networks,
+  Keypair,
+  TransactionBuilder,
+  Operation,
+  Asset,
 } from "@stellar/stellar-sdk";
 
 const HORIZON_URL =
@@ -91,6 +95,57 @@ export async function fundTestnetAccount(publicKey: string): Promise<boolean> {
     return true;
   } catch {
     return false;
+  }
+}
+
+/**
+ * Fund any Stellar address with XLM on testnet.
+ * - G... accounts: uses Friendbot
+ * - C... contracts: sends XLM from deployer keypair via Horizon payment
+ */
+export async function fundAccountWithXLM(
+  address: string,
+  amount = "100",
+): Promise<string | null> {
+  try {
+    if (address.startsWith("G")) {
+      const r = await fetch(`https://friendbot.stellar.org?addr=${address}`);
+      if (r.ok) return "friendbot";
+      return null;
+    }
+
+    // Soroban contract address (C...) — send from deployer
+    const secretKey = process.env.SOROBAN_SECRET_KEY;
+    if (!secretKey) {
+      console.warn("fundAccountWithXLM: SOROBAN_SECRET_KEY not set");
+      return null;
+    }
+
+    const keypair = Keypair.fromSecret(secretKey);
+    const source = await horizon.loadAccount(keypair.publicKey());
+
+    const tx = new TransactionBuilder(source, {
+      fee: "100000",
+      networkPassphrase: NETWORK_PASSPHRASE,
+    })
+      .addOperation(
+        Operation.payment({
+          destination: address,
+          asset: Asset.native(),
+          amount,
+        }),
+      )
+      .setTimeout(30)
+      .build();
+
+    tx.sign(keypair);
+    const result = await horizon.submitTransaction(tx);
+    const hash = (result as any).hash ?? (result as any).id ?? "ok";
+    console.log(`Funded ${address} with ${amount} XLM — tx: ${hash}`);
+    return hash;
+  } catch (err: any) {
+    console.warn(`fundAccountWithXLM failed for ${address}:`, err.message);
+    return null;
   }
 }
 

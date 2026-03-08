@@ -62,6 +62,25 @@ router.post("/execute", async (req, res) => {
       destAddress,
     );
 
+    // Build per-chain explorer URLs
+    const toExplorerUrl = (hash: string | undefined) => {
+      if (!hash) return undefined;
+      if (hash.startsWith("sol:"))
+        return `https://explorer.solana.com/tx/${hash.slice(4)}?cluster=devnet`;
+      if (hash.startsWith("0x"))
+        return `https://sepolia.etherscan.io/tx/${hash}`;
+      return `https://stellar.expert/explorer/testnet/tx/${hash}`;
+    };
+
+    // stellarExplorerUrl always points to the real on-chain Stellar tx:
+    //   stellar→other  →  burn tx  (admin_burn on nUSD/nBRL contract, real hash)
+    //   other→stellar  →  mint tx  (mint on nUSD/nBRL contract, real hash)
+    const stellarHash =
+      sourceChain === "stellar" ? tx.burnTxHash : tx.mintTxHash;
+    const stellarExplorerUrl = stellarHash && !stellarHash.startsWith("0x") && !stellarHash.startsWith("sol:")
+      ? `https://stellar.expert/explorer/testnet/tx/${stellarHash}`
+      : undefined;
+
     res.json({
       success: true,
       bridge: tx,
@@ -69,17 +88,10 @@ router.post("/execute", async (req, res) => {
         destChain !== "stellar"
           ? "Mint on destination chain is simulated (demo). Production requires bridge contracts."
           : undefined,
+      stellarExplorerUrl,   // always the real Stellar tx — use this for the main explorer link
       explorerUrls: {
-        burn: tx.burnTxHash?.startsWith("sol:")
-          ? `https://explorer.solana.com/tx/${tx.burnTxHash.slice(4)}?cluster=devnet`
-          : tx.burnTxHash?.startsWith("0x")
-            ? `https://sepolia.etherscan.io/tx/${tx.burnTxHash}`
-            : `https://stellar.expert/explorer/testnet/tx/${tx.burnTxHash}`,
-        mint: tx.mintTxHash?.startsWith("sol:")
-          ? `https://explorer.solana.com/tx/${tx.mintTxHash.slice(4)}?cluster=devnet`
-          : tx.mintTxHash?.startsWith("0x")
-            ? `https://sepolia.etherscan.io/tx/${tx.mintTxHash}`
-            : `https://stellar.expert/explorer/testnet/tx/${tx.mintTxHash}`,
+        burn: toExplorerUrl(tx.burnTxHash),
+        mint: toExplorerUrl(tx.mintTxHash),
       },
     });
   } catch (err: any) {

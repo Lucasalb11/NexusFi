@@ -12,6 +12,8 @@ import {
   BarChart3,
   CreditCard,
   RefreshCw,
+  Zap,
+  ExternalLink,
 } from "lucide-react";
 import CreditCardVisual from "@/components/CreditCardVisual";
 import CreditScoreGauge from "@/components/CreditScoreGauge";
@@ -71,6 +73,8 @@ export default function CreditPage() {
   const [repayAmount, setRepayAmount] = useState("");
   const [useLoading, setUseLoading] = useState(false);
   const [repayLoading, setRepayLoading] = useState(false);
+  const [openLoading, setOpenLoading] = useState(false);
+  const [openTxHash, setOpenTxHash] = useState<string | null>(null);
   const [txError, setTxError] = useState<string | null>(null);
 
   const cardLastFour = address ? address.slice(-4) : "0000";
@@ -89,6 +93,23 @@ export default function CreditPage() {
         // fallback to mock
       }
     })();
+  }, []);
+
+  const handleOpenCreditLine = useCallback(async () => {
+    setOpenLoading(true);
+    setTxError(null);
+    try {
+      const result = await api.post<{ success: boolean; txHash: string; score: number; explorerUrl: string }>(
+        "/api/credit/open", {},
+      );
+      setOpenTxHash(result.txHash);
+      const info = await api.get<CreditInfo>("/api/credit/info");
+      if (info.hasCredit) setCreditInfo(info);
+    } catch (err: any) {
+      setTxError(err?.message ?? "Failed to open credit line");
+    } finally {
+      setOpenLoading(false);
+    }
   }, []);
 
   const requestAnalysis = useCallback(async () => {
@@ -188,15 +209,58 @@ export default function CreditPage() {
         </div>
       </div>
 
-      {creditInfo?.hasCredit && (
+      {!creditInfo?.hasCredit && (
         <motion.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           className="glass rounded-xl p-4 space-y-3"
         >
           <h3 className="text-xs font-medium uppercase tracking-widest text-text-secondary">
-            Use Credit / Repay
+            Activate Credit Line
           </h3>
+          <p className="text-[11px] text-text-muted leading-relaxed">
+            Your AI credit score determines your limit. The backend signs the Soroban transaction on your behalf using the admin key.
+          </p>
+          {txError && <p className="text-[11px] text-red-400">{txError}</p>}
+          {openTxHash && (
+            <a
+              href={`https://stellar.expert/explorer/testnet/tx/${openTxHash}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1.5 text-[11px] text-accent hover:underline"
+            >
+              <ExternalLink size={11} />
+              View on Stellar Explorer
+            </a>
+          )}
+          <button
+            onClick={handleOpenCreditLine}
+            disabled={openLoading}
+            className="w-full py-3 rounded-lg bg-accent text-bg-primary text-xs font-semibold flex items-center justify-center gap-2 disabled:opacity-50 tracking-wide"
+          >
+            {openLoading ? (
+              <><Loader2 size={14} className="animate-spin" /> Opening on Soroban...</>
+            ) : (
+              <><Zap size={14} /> Open Credit Line</>
+            )}
+          </button>
+        </motion.div>
+      )}
+
+      {creditInfo?.hasCredit && (
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="glass rounded-xl p-4 space-y-3"
+        >
+          <div className="flex items-center justify-between">
+            <h3 className="text-xs font-medium uppercase tracking-widest text-text-secondary">
+              Use Credit / Repay
+            </h3>
+            <span className="flex items-center gap-1 text-[10px] text-success tracking-wide">
+              <Shield size={10} /> On-chain
+            </span>
+          </div>
           <p className="text-[11px] text-text-muted">
             Requires Freighter to sign. use_credit and repay need your wallet signature.
           </p>

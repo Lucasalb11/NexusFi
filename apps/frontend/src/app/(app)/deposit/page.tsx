@@ -32,26 +32,23 @@ const PAYMENT_METHODS: {
   description: string;
   icon: typeof QrCode;
   fiat: string;
+  fiatSymbol: string;
   region: string;
+  flag: string;
   processingTime: string;
+  badge?: string;
 }[] = [
   {
     id: "pix",
     label: "PIX",
-    description: "Instant transfer",
+    description: "Instant bank transfer",
     icon: QrCode,
     fiat: "BRL",
+    fiatSymbol: "R$",
     region: "Brazil",
+    flag: "🇧🇷",
     processingTime: "~1 min",
-  },
-  {
-    id: "swift",
-    label: "SWIFT / Wire",
-    description: "International bank transfer",
-    icon: Building2,
-    fiat: "USD",
-    region: "Global",
-    processingTime: "1–3 days",
+    badge: "Instant",
   },
   {
     id: "card",
@@ -59,7 +56,9 @@ const PAYMENT_METHODS: {
     description: "Visa / Mastercard",
     icon: CreditCard,
     fiat: "USD",
+    fiatSymbol: "$",
     region: "Global",
+    flag: "🌐",
     processingTime: "~5 min",
   },
   {
@@ -68,8 +67,21 @@ const PAYMENT_METHODS: {
     description: "EU bank transfer",
     icon: Globe,
     fiat: "EUR",
+    fiatSymbol: "€",
     region: "Europe",
+    flag: "🇪🇺",
     processingTime: "1–2 days",
+  },
+  {
+    id: "swift",
+    label: "SWIFT / Wire",
+    description: "International wire transfer",
+    icon: Building2,
+    fiat: "USD",
+    fiatSymbol: "$",
+    region: "Global",
+    flag: "🏦",
+    processingTime: "1–3 days",
   },
 ];
 
@@ -98,6 +110,7 @@ export default function DepositPage() {
     USD: "$",
     EUR: "€",
   };
+  const isSandbox = process.env.NEXT_PUBLIC_MOONPAY_ENV !== "production";
 
   const reset = useCallback(() => {
     setStep("method");
@@ -201,40 +214,55 @@ export default function DepositPage() {
             exit={{ opacity: 0, y: -8 }}
             className="space-y-3"
           >
+            {isSandbox && (
+              <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-warning/10 border border-warning/20 text-[11px] text-warning tracking-wide">
+                <Zap size={11} />
+                Sandbox mode — no real money is moved
+              </div>
+            )}
+
             <p className="text-xs text-text-secondary tracking-wide">
               {mode === "deposit"
                 ? "Select a payment method to add funds"
                 : "Select how to receive your fiat"}
             </p>
 
-            {PAYMENT_METHODS.map((method) => {
-              const Icon = method.icon;
-              return (
+            {PAYMENT_METHODS.map((method) => (
                 <button
                   key={method.id}
                   onClick={() => handleMethodSelect(method.id)}
                   className="w-full flex items-center gap-4 p-4 rounded-xl glass hover:bg-bg-elevated/40 transition-all text-left group"
                 >
-                  <div className="w-10 h-10 rounded-lg border border-border/30 bg-bg-elevated flex items-center justify-center shrink-0">
-                    <Icon size={18} className="text-accent" />
+                  <div className="w-10 h-10 rounded-lg border border-border/30 bg-bg-elevated flex items-center justify-center shrink-0 text-xl">
+                    {method.flag}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium text-sm">{method.label}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="font-medium text-sm">{method.label}</p>
+                      {method.badge && (
+                        <span className="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-success/15 text-success tracking-wider">
+                          {method.badge}
+                        </span>
+                      )}
+                    </div>
                     <p className="text-[11px] text-text-muted tracking-wide">
-                      {method.description} — {method.region}
+                      {method.description} · {method.region}
                     </p>
                     <p className="text-[10px] text-text-muted mt-0.5">
-                      {method.fiat} — {method.processingTime}
+                      <span className="font-medium text-text-secondary">{method.fiatSymbol} {method.fiat}</span>
+                      {" · "}{method.processingTime}
                     </p>
                   </div>
                   <ChevronRight size={14} className="text-text-muted group-hover:text-accent transition-colors" />
                 </button>
-              );
-            })}
+            ))}
 
-            <p className="text-center text-[10px] text-text-muted pt-2 tracking-wider">
-              Powered by MoonPay — USDC on Stellar
-            </p>
+            <div className="flex items-center justify-center gap-2 pt-2">
+              <img src="/moonpay-logo.svg" alt="MoonPay" className="h-4 opacity-40" onError={(e) => (e.currentTarget.style.display = "none")} />
+              <p className="text-center text-[10px] text-text-muted tracking-wider">
+                Powered by MoonPay · USDC on Stellar
+              </p>
+            </div>
           </motion.div>
         )}
 
@@ -431,9 +459,14 @@ export default function DepositPage() {
                 : `Stablecoins burned. Fiat will be sent to your ${currentMethod?.label ?? ""} account.`}
             </p>
             {txHash && (
-              <p className="text-[10px] text-text-muted font-mono break-all px-4">
-                Ref: {txHash}
-              </p>
+              <div className="flex flex-col items-center gap-1">
+                <p className="text-[10px] text-text-muted">
+                  Reference ID
+                </p>
+                <p className="text-[10px] text-text-muted font-mono break-all px-4 text-center max-w-xs">
+                  {txHash}
+                </p>
+              </div>
             )}
             <button
               onClick={reset}

@@ -1,6 +1,7 @@
 import { Router } from "express";
 import * as StellarSdk from "@stellar/stellar-sdk";
 import { mint, getBalance } from "../services/tokens.js";
+import { fundAccountWithXLM } from "../services/stellar.js";
 
 const router: Router = Router();
 
@@ -80,8 +81,11 @@ router.post("/register", async (req, res) => {
     // Respond immediately — airdrop runs in background so the frontend isn't blocked
     res.json({ success: true, keyId, contractId, createdAt });
 
-    // Fire-and-forget: mint starting balance to the new wallet
-    mintStartingBalance(contractId).catch((err) =>
+    // Fire-and-forget: mint starting balance + fund XLM
+    Promise.all([
+      mintStartingBalance(contractId),
+      fundAccountWithXLM(contractId, "100"),
+    ]).catch((err) =>
       console.error(`Airdrop background error for ${contractId}:`, err.message),
     );
   } catch (err: any) {
@@ -152,8 +156,11 @@ router.post("/airdrop", async (req, res) => {
       return res.status(400).json({ error: "Missing contractId" });
     }
 
-    const result = await mintStartingBalance(contractId);
-    res.json({ success: true, contractId, airdrop: result });
+    const [airdrop, xlmHash] = await Promise.all([
+      mintStartingBalance(contractId),
+      fundAccountWithXLM(contractId, "100"),
+    ]);
+    res.json({ success: true, contractId, airdrop, xlmFunded: !!xlmHash });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
