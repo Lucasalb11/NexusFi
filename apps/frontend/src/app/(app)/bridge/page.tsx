@@ -14,6 +14,8 @@ import {
   Info,
   X,
   AlertCircle,
+  User,
+  Send,
 } from "lucide-react";
 import clsx from "clsx";
 import { api, ApiError } from "@/lib/api";
@@ -35,6 +37,14 @@ type Asset = {
 };
 
 type Step = "form" | "processing" | "done";
+
+// Address format hints and placeholder per chain
+const CHAIN_ADDRESS_HINT: Record<string, { placeholder: string; hint: string; validate: (v: string) => boolean }> = {
+  stellar:   { placeholder: "G... or C...", hint: "Stellar address (56 chars, starts with G or C)", validate: (v) => /^[GC][A-Z0-9]{55}$/.test(v) },
+  ethereum:  { placeholder: "0x...", hint: "EVM address (42 chars, starts with 0x)", validate: (v) => /^0x[0-9a-fA-F]{40}$/.test(v) },
+  solana:    { placeholder: "Base58 address", hint: "Solana address (32–44 chars)", validate: (v) => /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(v) },
+  avalanche: { placeholder: "0x...", hint: "EVM address (42 chars, starts with 0x)", validate: (v) => /^0x[0-9a-fA-F]{40}$/.test(v) },
+};
 
 // ─── Static data ──────────────────────────────────────────────────────────────
 
@@ -156,9 +166,15 @@ export default function BridgePage() {
   const [explorerUrl, setExplorerUrl] = useState<string | null>(null);
   const [error,       setError]       = useState<string | null>(null);
 
+  const [sendToSelf,   setSendToSelf]   = useState(true);
+  const [destAddress,  setDestAddress]  = useState("");
+
   const [showFrom,  setShowFrom]  = useState(false);
   const [showTo,    setShowTo]    = useState(false);
   const [showAsset, setShowAsset] = useState(false);
+
+  const addrHint = CHAIN_ADDRESS_HINT[toChain.id];
+  const addrValid = sendToSelf || (destAddress.trim().length > 0 && addrHint.validate(destAddress.trim()));
 
   const num     = parseFloat(amount) || 0;
   const fee     = num * BRIDGE_FEE_RATE;
@@ -183,17 +199,19 @@ export default function BridgePage() {
     setProgress(0);
     setError(null);
 
-    // Get the user's wallet address for destAddress (demo: reuse Stellar address)
-    const destAddress = (() => {
-      try {
-        const raw = typeof window !== "undefined"
-          ? localStorage.getItem("nexusfi_wallet")
-          : null;
-        return raw ? (JSON.parse(raw).address ?? "") : "";
-      } catch {
-        return "";
-      }
-    })() || "GBZXN3PIRZGNMHGA7MUUUF4GWPY5AYPV6LY4UV2GL6VJGIQRXFDNMADI";
+    // Resolve destination address: own wallet or custom input
+    const resolvedDest = sendToSelf
+      ? (() => {
+          try {
+            const raw = typeof window !== "undefined"
+              ? localStorage.getItem("nexusfi_wallet")
+              : null;
+            return raw ? (JSON.parse(raw).address ?? "") : "";
+          } catch {
+            return "";
+          }
+        })() || "GBZXN3PIRZGNMHGA7MUUUF4GWPY5AYPV6LY4UV2GL6VJGIQRXFDNMADI"
+      : destAddress.trim();
 
     try {
       // Kick off the API call immediately — it does real on-chain work
@@ -208,7 +226,7 @@ export default function BridgePage() {
         destChain: toChain.id,
         token: asset.symbol,
         amount: num,
-        destAddress,
+        destAddress: resolvedDest,
       });
 
       // Animate progress milestones while waiting for the backend
@@ -259,6 +277,8 @@ export default function BridgePage() {
     setExplorerUrl(null);
     setError(null);
     setProgress(0);
+    setSendToSelf(true);
+    setDestAddress("");
   }, []);
 
   // Which step is currently "in-flight"
@@ -347,6 +367,82 @@ export default function BridgePage() {
                   <ChevronDown size={14} className="text-text-muted group-hover:text-accent transition-colors" />
                 </button>
               </div>
+            </div>
+
+            {/* Recipient */}
+            <div className="glass rounded-2xl p-4 space-y-3">
+              <p className="text-[10px] text-text-muted uppercase tracking-widest">Recipient</p>
+
+              {/* Toggle */}
+              <div className="flex gap-1 p-1 rounded-xl bg-bg-primary border border-border/20">
+                <button
+                  onClick={() => { setSendToSelf(true); setDestAddress(""); }}
+                  className={clsx(
+                    "flex-1 py-2 rounded-lg text-xs font-medium transition-all flex items-center justify-center gap-1.5 tracking-wide",
+                    sendToSelf
+                      ? "bg-accent text-bg-primary"
+                      : "text-text-muted hover:text-text-secondary",
+                  )}
+                >
+                  <User size={12} />
+                  My Wallet
+                </button>
+                <button
+                  onClick={() => setSendToSelf(false)}
+                  className={clsx(
+                    "flex-1 py-2 rounded-lg text-xs font-medium transition-all flex items-center justify-center gap-1.5 tracking-wide",
+                    !sendToSelf
+                      ? "bg-accent text-bg-primary"
+                      : "text-text-muted hover:text-text-secondary",
+                  )}
+                >
+                  <Send size={12} />
+                  Other Address
+                </button>
+              </div>
+
+              {/* Custom address input */}
+              <AnimatePresence>
+                {!sendToSelf && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="overflow-hidden space-y-1.5"
+                  >
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={destAddress}
+                        onChange={(e) => setDestAddress(e.target.value)}
+                        placeholder={addrHint.placeholder}
+                        spellCheck={false}
+                        autoCorrect="off"
+                        autoCapitalize="off"
+                        className={clsx(
+                          "w-full px-3 py-3 rounded-xl bg-bg-primary border text-sm font-mono outline-none transition-colors placeholder:text-text-muted/40",
+                          destAddress && !addrHint.validate(destAddress)
+                            ? "border-danger/40 focus:border-danger/70"
+                            : destAddress && addrHint.validate(destAddress)
+                            ? "border-success/40 focus:border-success/70"
+                            : "border-border/30 focus:border-accent/40",
+                        )}
+                      />
+                      {destAddress && addrHint.validate(destAddress) && (
+                        <CheckCircle2
+                          size={14}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-success"
+                        />
+                      )}
+                    </div>
+                    <p className="text-[10px] text-text-muted px-1 leading-relaxed">
+                      {destAddress && !addrHint.validate(destAddress)
+                        ? <span className="text-danger">Invalid address format</span>
+                        : addrHint.hint}
+                    </p>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
 
             {/* Asset + Amount */}
@@ -501,7 +597,7 @@ export default function BridgePage() {
             {/* CTA */}
             <button
               onClick={handleBridge}
-              disabled={!amount || num <= 0 || fromChain.id === toChain.id}
+              disabled={!amount || num <= 0 || fromChain.id === toChain.id || !addrValid}
               className="w-full py-4 rounded-xl bg-accent text-bg-primary font-semibold flex items-center justify-center gap-2 disabled:opacity-30 disabled:cursor-not-allowed transition-opacity text-sm tracking-wide"
             >
               <ArrowLeftRight size={16} />
@@ -650,9 +746,14 @@ export default function BridgePage() {
 
               <div className="flex items-center gap-3 p-4">
                 <ChainIcon chain={toChain} size="sm" />
-                <div className="flex-1">
+                <div className="flex-1 min-w-0">
                   <p className="text-[10px] text-text-muted uppercase tracking-wider">Received on</p>
                   <p className="text-sm font-medium">{toChain.name}</p>
+                  {!sendToSelf && destAddress && (
+                    <p className="text-[10px] text-text-muted font-mono truncate mt-0.5">
+                      {destAddress.slice(0, 8)}…{destAddress.slice(-6)}
+                    </p>
+                  )}
                 </div>
                 <span className="text-sm font-semibold tabular-nums text-success">
                   {received.toFixed(4)} {asset.symbol}

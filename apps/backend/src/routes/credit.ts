@@ -23,6 +23,8 @@ router.get("/score", async (req, res) => {
     let onChain = false;
     let onChainError: string | undefined;
     let contract: string | undefined;
+    let txHash: string | undefined;
+    let explorerUrl: string | undefined;
 
     if (CREDIT_SCORE_CONTRACT) {
       try {
@@ -31,7 +33,7 @@ router.get("/score", async (req, res) => {
           .digest();
         const timestamp = BigInt(Math.floor(Date.now() / 1000));
 
-        await invokeContractWrite(CREDIT_SCORE_CONTRACT, "set_score", [
+        const writeResult = await invokeContractWrite(CREDIT_SCORE_CONTRACT, "set_score", [
           scVal.address(address),
           scVal.u32(result.score),
           scVal.u64(timestamp),
@@ -40,6 +42,8 @@ router.get("/score", async (req, res) => {
 
         onChain = true;
         contract = CREDIT_SCORE_CONTRACT;
+        txHash = writeResult.hash;
+        explorerUrl = `https://stellar.expert/explorer/testnet/tx/${writeResult.hash}`;
       } catch (err: any) {
         onChainError = err.message;
       }
@@ -51,6 +55,8 @@ router.get("/score", async (req, res) => {
       onChain,
       onChainError,
       contract,
+      txHash,
+      explorerUrl,
       workflow: "wf2-ai-credit-scoring",
       track: "CRE & AI",
     });

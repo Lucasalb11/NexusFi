@@ -41,6 +41,10 @@ type ScoreResponse = {
   timestamp: string;
   workflow: string;
   track: string;
+  onChain?: boolean;
+  txHash?: string;
+  explorerUrl?: string;
+  contract?: string;
 };
 
 type CreditInfo = {
@@ -68,6 +72,8 @@ export default function CreditPage() {
   const [score, setScore] = useState(MOCK_CREDIT_SCORE);
   const [reasoning, setReasoning] = useState<string | null>(null);
   const [factors, setFactors] = useState<ScoreResponse["factors"] | null>(null);
+  const [scoreExplorerUrl, setScoreExplorerUrl] = useState<string | null>(null);
+  const [scoreOnChain, setScoreOnChain] = useState(false);
   const [creditInfo, setCreditInfo] = useState<CreditInfo | null>(null);
   const [useAmount, setUseAmount] = useState("");
   const [repayAmount, setRepayAmount] = useState("");
@@ -119,6 +125,8 @@ export default function CreditPage() {
       setScore(data.score);
       setReasoning(data.reasoning);
       setFactors(data.factors);
+      if (data.explorerUrl) setScoreExplorerUrl(data.explorerUrl);
+      setScoreOnChain(!!data.onChain);
     } catch {
       setScore(Math.min(1000, score + Math.floor(Math.random() * 30)));
     } finally {
@@ -350,6 +358,42 @@ export default function CreditPage() {
             </>
           )}
         </button>
+
+        {/* On-chain attestation links */}
+        {scoreOnChain && (
+          <motion.div
+            initial={{ opacity: 0, y: 4 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mt-3 p-3 rounded-lg bg-success/5 border border-success/15 space-y-2"
+          >
+            <p className="text-[10px] text-success font-medium uppercase tracking-widest flex items-center gap-1.5">
+              <Shield size={10} />
+              Score attested on-chain
+            </p>
+            <div className="space-y-1.5">
+              {scoreExplorerUrl && (
+                <a
+                  href={scoreExplorerUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1.5 text-[11px] text-accent hover:underline"
+                >
+                  <ExternalLink size={11} />
+                  Stellar Explorer — set_score tx
+                </a>
+              )}
+              <a
+                href="https://sepolia.etherscan.io/address/0x15fc6ae953e024d975e77382eeec56a9101f9f88"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1.5 text-[11px] text-text-muted hover:text-accent hover:underline transition-colors"
+              >
+                <ExternalLink size={11} />
+                Sepolia — Chainlink CRE Forwarder
+              </a>
+            </div>
+          </motion.div>
+        )}
       </motion.div>
 
       <motion.div
