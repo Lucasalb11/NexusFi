@@ -1,6 +1,0 @@
-[build]
-installCommand = "yarn install --frozen-lockfile --ignore-engines"
-buildCommand = "yarn build:backend"
-
-[deploy]
-startCommand = "yarn workspace backend start"
