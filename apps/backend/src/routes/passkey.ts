@@ -1,6 +1,6 @@
 import { Router } from "express";
 import * as StellarSdk from "@stellar/stellar-sdk";
-import { mint, getBalance, getAllTokens } from "../services/tokens.js";
+import { mint, getBalance } from "../services/tokens.js";
 
 const router: Router = Router();
 
