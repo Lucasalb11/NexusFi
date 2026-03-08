@@ -166,6 +166,8 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       });
       persist(contractId, keyIdBase64, regResult.createdAt);
       await refreshWallets();
+      // Trigger airdrop in background — gives the wallet its starting balance
+      api.post("/api/passkey/airdrop", { contractId }).catch(() => {});
       setIsLoading(false);
       return contractId;
     } catch (err: any) {
@@ -200,6 +202,8 @@ export function WalletProvider({ children }: { children: ReactNode }) {
 
       persist(contractId, keyIdBase64);
       await refreshWallets();
+      // Trigger airdrop — idempotent, skips if wallet already has balance
+      api.post("/api/passkey/airdrop", { contractId }).catch(() => {});
       setIsLoading(false);
       return contractId;
     } catch (err: any) {
@@ -246,6 +250,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       });
       persist(contractId, keyIdBase64, regResult.createdAt);
       await refreshWallets();
+      api.post("/api/passkey/airdrop", { contractId }).catch(() => {});
       setIsLoading(false);
       return contractId;
     } catch (err: any) {

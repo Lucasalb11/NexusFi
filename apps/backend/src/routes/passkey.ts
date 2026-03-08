@@ -1,7 +1,6 @@
 import { Router } from "express";
 import * as StellarSdk from "@stellar/stellar-sdk";
-import { mint } from "../services/tokens.js";
-import { fundTestnetAccount } from "../services/stellar.js";
+import { mint, getBalance, getAllTokens } from "../services/tokens.js";
 
 const router: Router = Router();
 
@@ -78,40 +77,13 @@ router.post("/register", async (req, res) => {
 
     console.log(`Passkey wallet registered: ${keyId} -> ${contractId} (user: ${userId})`);
 
-    // Auto-fund and auto-mint so the new wallet has tokens to use immediately
-    const airdropResults: Record<string, any> = {};
+    // Respond immediately — airdrop runs in background so the frontend isn't blocked
+    res.json({ success: true, keyId, contractId, createdAt });
 
-    // Fund with testnet XLM via Friendbot (needed for transaction fees)
-    try {
-      await fundTestnetAccount(contractId);
-      airdropResults.xlmFunded = true;
-      console.log(`Friendbot funded: ${contractId}`);
-    } catch (err: any) {
-      console.warn(`Friendbot failed for ${contractId}:`, err.message);
-      airdropResults.xlmFunded = false;
-    }
-
-    // Mint 10,000 nUSD to new wallet
-    try {
-      const { hash } = await mint("nUSD", contractId, 10_000);
-      airdropResults.nUSD = { minted: 10_000, txHash: hash };
-      console.log(`Minted 10,000 nUSD to ${contractId} — tx: ${hash}`);
-    } catch (err: any) {
-      console.warn(`nUSD mint failed for ${contractId}:`, err.message);
-      airdropResults.nUSD = { error: err.message };
-    }
-
-    // Mint 10,000 nBRL to new wallet
-    try {
-      const { hash } = await mint("nBRL", contractId, 10_000);
-      airdropResults.nBRL = { minted: 10_000, txHash: hash };
-      console.log(`Minted 10,000 nBRL to ${contractId} — tx: ${hash}`);
-    } catch (err: any) {
-      console.warn(`nBRL mint failed for ${contractId}:`, err.message);
-      airdropResults.nBRL = { error: err.message };
-    }
-
-    res.json({ success: true, keyId, contractId, createdAt, airdrop: airdropResults });
+    // Fire-and-forget: mint starting balance to the new wallet
+    mintStartingBalance(contractId).catch((err) =>
+      console.error(`Airdrop background error for ${contractId}:`, err.message),
+    );
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
@@ -165,5 +137,60 @@ router.post("/logout", (req, res) => {
     res.json({ success: true });
   });
 });
+
+/**
+ * POST /api/passkey/airdrop
+ *
+ * Mints 10,000 nUSD and 10,000 nBRL to the wallet if it has zero balance.
+ * Idempotent: skips mint for tokens the wallet already holds.
+ * Call this after createAccount AND signIn so every wallet has a starting balance.
+ */
+router.post("/airdrop", async (req, res) => {
+  try {
+    const { contractId } = req.body;
+    if (!contractId) {
+      return res.status(400).json({ error: "Missing contractId" });
+    }
+
+    const result = await mintStartingBalance(contractId);
+    res.json({ success: true, contractId, airdrop: result });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/** Mint 10,000 nUSD + 10,000 nBRL if the wallet balance is 0 for each token. */
+async function mintStartingBalance(contractId: string) {
+  const AIRDROP_AMOUNT = 10_000;
+  const result: Record<string, any> = {};
+
+  for (const symbol of ["nUSD", "nBRL"] as const) {
+    try {
+      // Check existing balance — skip mint if wallet already has tokens
+      let currentBalance = 0;
+      try {
+        const bal = await getBalance(symbol, contractId);
+        currentBalance = Number(bal.raw);
+      } catch {
+        currentBalance = 0; // treat read error as zero balance
+      }
+
+      if (currentBalance > 0) {
+        result[symbol] = { skipped: true, reason: "already has balance" };
+        console.log(`Airdrop skipped ${symbol} for ${contractId} — already has balance`);
+        continue;
+      }
+
+      const { hash } = await mint(symbol, contractId, AIRDROP_AMOUNT);
+      result[symbol] = { minted: AIRDROP_AMOUNT, txHash: hash };
+      console.log(`Airdrop: minted ${AIRDROP_AMOUNT} ${symbol} to ${contractId} — tx: ${hash}`);
+    } catch (err: any) {
+      result[symbol] = { error: err.message };
+      console.warn(`Airdrop mint failed for ${symbol} → ${contractId}:`, err.message);
+    }
+  }
+
+  return result;
+}
 
 export default router;
