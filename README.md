@@ -4,7 +4,7 @@
 
 [![Live App](https://img.shields.io/badge/Live%20App-nexusfi.up.railway.app-BFA36B?style=for-the-badge)](https://nexusfi-production-aeb5.up.railway.app)
 [![GitHub](https://img.shields.io/badge/GitHub-Lucasalb11%2FNexusFi-181717?style=for-the-badge&logo=github)](https://github.com/Lucasalb11/NexusFi)
-[![Demo Video](https://img.shields.io/badge/Demo%20Video-Watch%20Now-FF0000?style=for-the-badge&logo=youtube)](#demo-video)
+[![Demo Video](https://img.shields.io/badge/Demo%20Video-Watch%20Now-FF0000?style=for-the-badge&logo=youtube)](https://youtu.be/jhCU4G1dD0o)
 
 ---
 
@@ -12,9 +12,9 @@
 
 **NexusFi is the first DeFi credit card platform where every critical financial decision — credit scoring, reserve verification, risk monitoring, and privacy-preserving eligibility — is orchestrated by Chainlink CRE.**
 
-We bring Nubank-style banking to the 1.4 billion unbanked adults who have smartphones but no credit history: a mobile-first PWA that issues AI-scored credit lines, backs every stablecoin with on-chain proof of reserves, and processes sensitive financial data inside a TEE so your credentials never touch the blockchain.
+We bring mobile-first banking to the 1.4 billion unbanked adults who have smartphones but no credit history: a PWA that issues AI-scored credit lines, backs every stablecoin with on-chain proof of reserves, and processes sensitive financial data inside a TEE so your credentials never touch the blockchain.
 
-**The real innovation:** 5 CRE workflows running in parallel as a single WASM bundle on the Chainlink DON, each covering a different hackathon track — Proof of Reserve, AI Credit Scoring, Risk Monitoring, Confidential HTTP, and Cross-Chain Bridge. Not a demo of one feature. A production-grade DeFi protocol.
+**The real innovation:** 4 CRE workflows running in parallel as a single WASM bundle on the Chainlink DON, each covering a different hackathon track — Proof of Reserve, AI Credit Scoring, Risk Monitoring, and Confidential HTTP. Not a demo of one feature. A production-grade DeFi protocol.
 
 ---
 
@@ -22,7 +22,7 @@ We bring Nubank-style banking to the 1.4 billion unbanked adults who have smartp
 
 | Requirement | Status | Link |
 |-------------|--------|------|
-| 3–5 min demo video | ✅ | [Watch on YouTube](#demo-video) |
+| 3–5 min demo video | ✅ | [Watch on YouTube](https://youtu.be/jhCU4G1dD0o) |
 | Public GitHub repository | ✅ | [github.com/Lucasalb11/NexusFi](https://github.com/Lucasalb11/NexusFi) |
 | Live deployed application | ✅ | [nexusfi-production-aeb5.up.railway.app](https://nexusfi-production-aeb5.up.railway.app) |
 | CRE workflow simulation | ✅ | [Simulate in 3 commands](#cre-workflow-simulation) |
@@ -42,23 +42,18 @@ We bring Nubank-style banking to the 1.4 billion unbanked adults who have smartp
 | **Risk & Compliance**  WF3: Risk Monitor | Automated monitoring of reserve ratio, utilization, and price volatility — triggers on-chain alert at `ratio < 95%` |
 | **Privacy**  WF4: Confidential HTTP | Credit eligibility via `runtime.getSecret()` — zero PII on-chain; only `keccak256(userId)` + boolean result published |
 
-
-
-> WF5 (Cross-Chain Bridge) is a 5th workflow covering both DeFi and CRE tracks, strengthening our DeFi submission with a complete burn-verify-mint cycle between Stellar, Solana, Ethereum, and Avalanche.
-
 ---
 
 ## Demo Video
 
-> 📺 **[Watch the 4-minute demo →](#)** *(link will be live before March 8, 2026 deadline)*
+> 📺 **[Watch the 4-minute demo →](https://youtu.be/jhCU4G1dD0o)**
 
 The demo covers:
 1. Creating a passkey wallet (no seed phrase, biometric auth)
 2. Minting nUSD via MoonPay on-ramp (PIX / SWIFT / Card / SEPA)
 3. AI credit score computed live by CRE WF2 — shown in the app
 4. Opening and using a credit line (real Soroban transaction)
-5. Cross-chain bridge: Stellar → Ethereum in one tap (WF5)
-6. CRE `simulate` command output — all 5 workflows passing
+5. CRE `simulate` command output — all 4 workflows passing
 
 ---
 
@@ -83,7 +78,6 @@ The demo covers:
 │• Score │   WF2: AI Credit Scoring → CreditScoreAttestation.sol  │
 │• Line  │   WF3: Risk Monitor      → RiskReport.sol              │
 └────────┘   WF4: Confidential HTTP → PrivacyCreditCheck.sol      │
-             WF5: Cross-Chain Bridge → burn/mint authorization     │
                                                                    │
              All writes via CRE Forwarder: 0x15fc6ae953e024d97... │
              ┌─────────────────────────────────────────────────────┘
@@ -110,7 +104,7 @@ User wallet → Backend → CRE WF2 (Horizon txs → median consensus → scorin
 
 ## CRE Workflow Deep Dive
 
-All 5 workflows live in [`workflows/cre/main.ts`](workflows/cre/main.ts) — a single TypeScript file compiled to WASM by the CRE CLI and executed by the Chainlink DON.
+All 4 workflows live in [`workflows/cre/main.ts`](workflows/cre/main.ts) — a single TypeScript file compiled to WASM by the CRE CLI and executed by the Chainlink DON.
 
 ### WF1 — Proof of Reserve *(DeFi & Tokenization track)*
 
@@ -206,41 +200,27 @@ const result = httpClient.sendRequest(
 
 ---
 
-### WF5 — Cross-Chain Bridge *(DeFi & Tokenization + CRE & AI)*
-
-**Problem:** Moving assets cross-chain requires trusting a centralized bridge.
-
-**CRE solution:** CRE acts as the decentralized trust layer:
-1. User burns nUSD on Stellar (real on-chain transaction)
-2. CRE nodes independently verify the burn on Horizon: `burnVerified = 1`
-3. `ConsensusAggregationByFields` with `median` — all nodes agree before mint is authorized
-4. Mint authorized on destination chain (Solana / Ethereum / Avalanche) with 0.15–0.25% fee
-
-**No single party can forge a burn verification.** The CRE DON is the bridge oracle.
-
----
-
 ## Files Using Chainlink
 
 > Every file that directly imports or interacts with the Chainlink CRE SDK or CRE infrastructure:
 
 | File | Chainlink Integration |
 |------|-----------------------|
-| [`workflows/cre/main.ts`](workflows/cre/main.ts) | **Core** — All 5 CRE workflows. Imports `CronCapability, HTTPClient, handler, Runner, consensusMedianAggregation, ConsensusAggregationByFields, median, identical` from `@chainlink/cre-sdk`. Compiled to WASM by CRE CLI and executed by the Chainlink DON. |
-| [`workflows/cre/workflow.yaml`](workflows/cre/workflow.yaml) | CRE workflow declaration — links `main.ts` WASM to staging/production config environments |
-| [`workflows/cre/project.yaml`](workflows/cre/project.yaml) | CRE project settings — Sepolia RPC endpoint, CRE Forwarder address for EVM writes |
-| [`workflows/cre/config.staging.json`](workflows/cre/config.staging.json) | Workflow config: cron schedule (`*/30 * * * * *`), Stellar reserve address, bridge watch address |
-| [`workflows/cre/config.production.json`](workflows/cre/config.production.json) | Production config: tighter schedule (`*/5 * * * *`) for Proof of Reserve |
-| [`workflows/cre/secrets.yaml.example`](workflows/cre/secrets.yaml.example) | Template for `CREDIT_API_KEY` (WF4) and `GEMINI_API_KEY` (WF2) — injected via `runtime.getSecret()`, never hardcoded |
-| [`contracts/evm/src/ReserveAttestation.sol`](contracts/evm/src/ReserveAttestation.sol) | Sepolia — receives WF1 attestations; `onlyForwarder` modifier restricts writes to CRE DON (`0x15fc6ae...`) |
-| [`contracts/evm/src/CreditScoreAttestation.sol`](contracts/evm/src/CreditScoreAttestation.sol) | Sepolia — receives WF2 credit scores; stores per-address score history; emits `ScoreUpdated` |
-| [`contracts/evm/src/RiskReport.sol`](contracts/evm/src/RiskReport.sol) | Sepolia — receives WF3 risk reports; emits `AlertRaised`/`AlertCleared` events |
-| [`contracts/evm/src/PrivacyCreditCheck.sol`](contracts/evm/src/PrivacyCreditCheck.sol) | Sepolia — receives WF4 eligibility; stores only `keccak256(userId)` — **zero PII on-chain** |
-| [`contracts/evm/script/Deploy.s.sol`](contracts/evm/script/Deploy.s.sol) | Foundry deploy script — deploys all 4 contracts with hardcoded CRE Forwarder address |
-| [`apps/backend/src/services/cre-bridge.ts`](apps/backend/src/services/cre-bridge.ts) | Backend integration layer — routes CRE workflow results to frontend and Soroban contracts |
-| [`apps/backend/src/routes/cre.ts`](apps/backend/src/routes/cre.ts) | REST API exposing CRE workflow results (`GET /api/cre/proof-of-reserve`, `/credit-score`, `/risk`, `/privacy-check`) |
-| [`apps/backend/src/routes/bridge.ts`](apps/backend/src/routes/bridge.ts) | Cross-chain bridge API — quote, execute (triggers WF5 burn verification), status |
-| [`apps/backend/src/services/bridge.ts`](apps/backend/src/services/bridge.ts) | Bridge service — burn on Stellar, poll WF5 CRE attestation, authorize mint on destination |
+| [workflows/cre/main.ts](https://github.com/Lucasalb11/NexusFi/blob/main/workflows/cre/main.ts) | **Core** — All 4 CRE workflows. Imports `CronCapability, HTTPClient, handler, Runner, consensusMedianAggregation, ConsensusAggregationByFields, median, identical` from `@chainlink/cre-sdk`. Compiled to WASM by CRE CLI and executed by the Chainlink DON. |
+| [workflows/cre/workflow.yaml](https://github.com/Lucasalb11/NexusFi/blob/main/workflows/cre/workflow.yaml) | CRE workflow declaration — links `main.ts` WASM to staging/production config environments |
+| [workflows/cre/project.yaml](https://github.com/Lucasalb11/NexusFi/blob/main/workflows/cre/project.yaml) | CRE project settings — Sepolia RPC endpoint, CRE Forwarder address for EVM writes |
+| [workflows/cre/config.staging.json](https://github.com/Lucasalb11/NexusFi/blob/main/workflows/cre/config.staging.json) | Workflow config: cron schedule (`*/30 * * * * *`), Stellar reserve address, bridge watch address |
+| [workflows/cre/config.production.json](https://github.com/Lucasalb11/NexusFi/blob/main/workflows/cre/config.production.json) | Production config: tighter schedule (`*/5 * * * *`) for Proof of Reserve |
+| [workflows/cre/secrets.yaml.example](https://github.com/Lucasalb11/NexusFi/blob/main/workflows/cre/secrets.yaml.example) | Template for `CREDIT_API_KEY` (WF4) and `GEMINI_API_KEY` (WF2) — injected via `runtime.getSecret()`, never hardcoded |
+| [contracts/evm/src/ReserveAttestation.sol](https://github.com/Lucasalb11/NexusFi/blob/main/contracts/evm/src/ReserveAttestation.sol) | Sepolia — receives WF1 attestations; `onlyForwarder` modifier restricts writes to CRE DON (`0x15fc6ae...`) |
+| [contracts/evm/src/CreditScoreAttestation.sol](https://github.com/Lucasalb11/NexusFi/blob/main/contracts/evm/src/CreditScoreAttestation.sol) | Sepolia — receives WF2 credit scores; stores per-address score history; emits `ScoreUpdated` |
+| [contracts/evm/src/RiskReport.sol](https://github.com/Lucasalb11/NexusFi/blob/main/contracts/evm/src/RiskReport.sol) | Sepolia — receives WF3 risk reports; emits `AlertRaised`/`AlertCleared` events |
+| [contracts/evm/src/PrivacyCreditCheck.sol](https://github.com/Lucasalb11/NexusFi/blob/main/contracts/evm/src/PrivacyCreditCheck.sol) | Sepolia — receives WF4 eligibility; stores only `keccak256(userId)` — **zero PII on-chain** |
+| [contracts/evm/script/Deploy.s.sol](https://github.com/Lucasalb11/NexusFi/blob/main/contracts/evm/script/Deploy.s.sol) | Foundry deploy script — deploys all 4 contracts with hardcoded CRE Forwarder address |
+| [apps/backend/src/services/cre-bridge.ts](https://github.com/Lucasalb11/NexusFi/blob/main/apps/backend/src/services/cre-bridge.ts) | Backend integration layer — routes CRE workflow results to frontend and Soroban contracts |
+| [apps/backend/src/routes/cre.ts](https://github.com/Lucasalb11/NexusFi/blob/main/apps/backend/src/routes/cre.ts) | REST API exposing CRE workflow results (`GET /api/cre/proof-of-reserve`, `/credit-score`, `/risk`, `/privacy-check`) |
+| [apps/backend/src/routes/bridge.ts](https://github.com/Lucasalb11/NexusFi/blob/main/apps/backend/src/routes/bridge.ts) | Cross-chain bridge API — quote, execute, status |
+| [apps/backend/src/services/bridge.ts](https://github.com/Lucasalb11/NexusFi/blob/main/apps/backend/src/services/bridge.ts) | Bridge service — burn on Stellar, poll CRE attestation, authorize mint on destination |
 
 ---
 
@@ -289,7 +269,6 @@ cre workflow simulate --workflow-file workflow.yaml --target staging
 ✓ WF2 CreditScoring      score=735  tier=Good  txCount=42  accountAgeDays=180
 ✓ WF3 RiskMonitor        status=HEALTHY  reserveRatio=1.142  utilization=0.24  alertTriggered=0
 ✓ WF4 PrivacyCreditCheck eligible=true  rawDataOnChain=false  credentialsOnChain=false
-✓ WF5 CrossChainBridge   burnVerified=1  mintAuthorized=1  amount=500  dest=solana
 ```
 
 ### Workflow Config
@@ -382,7 +361,7 @@ NexusFi targets **financial inclusion** — specifically the 1.4 billion adults 
 | Backend | Express, TypeScript, Node.js 20 |
 | Soroban Contracts | Rust, soroban-sdk 22.0.10 — 4 contracts on Stellar Testnet |
 | EVM Contracts | Solidity 0.8.24, Foundry — 4 attestation contracts on Ethereum Sepolia |
-| CRE Workflows | `@chainlink/cre-sdk` 1.0.9, TypeScript → WASM — 5 workflows, 4 hackathon tracks |
+| CRE Workflows | `@chainlink/cre-sdk` 1.0.9, TypeScript → WASM — 4 workflows, 4 hackathon tracks |
 | Fiat On-Ramp | MoonPay (PIX, SWIFT, Card, SEPA → USDC on Stellar) |
 | Cross-Chain | Chainlink CRE bridge (Stellar ↔ Solana Devnet / Ethereum Sepolia / Avalanche Fuji) |
 | Networks | Stellar Testnet, Ethereum Sepolia, Solana Devnet, Avalanche Fuji |
@@ -410,7 +389,7 @@ NexusFi/
 │       └── script/Deploy.s.sol
 ├── workflows/
 │   └── cre/
-│       ├── main.ts            # All 5 CRE workflows (1 WASM bundle)
+│       ├── main.ts            # All 4 CRE workflows (1 WASM bundle)
 │       ├── workflow.yaml      # CRE workflow declaration
 │       ├── project.yaml       # CRE project config (Sepolia RPC + Forwarder)
 │       ├── config.staging.json

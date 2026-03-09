@@ -177,6 +177,7 @@ const fetchXlmPrice = (sendRequester: HTTPSendRequester): number => {
 };
 
 const onProofOfReserve = (runtime: Runtime<Config>): string => {
+  console.log("[WF1] Proof of Reserve");
   runtime.log("WF1: Proof of Reserve — starting attestation cycle");
 
   const { reserveAddress } = runtime.config;
@@ -321,6 +322,7 @@ const computeCreditScore = (
 };
 
 const onAICreditScoring = (runtime: Runtime<Config>): string => {
+  console.log("[WF2] AI Credit Scoring");
   runtime.log("WF2: AI Credit Scoring — analyzing on-chain transaction history");
 
   const { reserveAddress } = runtime.config;
@@ -414,6 +416,7 @@ const fetchRiskMetrics = (
 };
 
 const onRiskMonitor = (runtime: Runtime<Config>): string => {
+  console.log("[WF3] Risk Monitor");
   runtime.log("WF3: Risk Monitor — checking protocol health");
 
   const { reserveAddress } = runtime.config;
@@ -523,14 +526,20 @@ const checkCreditEligibility = (
 };
 
 const onPrivacyCreditCheck = (runtime: Runtime<Config>): string => {
+  console.log("[WF4] Privacy Credit Check");
   runtime.log("WF4: Privacy Credit Check — confidential eligibility verification");
   runtime.log("WF4: Credentials retrieved from CRE secrets (never on-chain)");
 
   // Retrieve API key from CRE secrets (TEE-secured)
   // In production: corresponds to `secrets.yaml` entry for CREDIT_API_KEY
-  // For simulation without a real key, getSecret returns an empty value
-  const apiKeySecret = runtime.getSecret({ id: "CREDIT_API_KEY", namespace: "nexusfi" }).result();
-  const apiKey = apiKeySecret.value ?? "";
+  // Gracefully falls back to "" when the secret is not configured (simulation mode)
+  let apiKey = "";
+  try {
+    const apiKeySecret = runtime.getSecret({ id: "CREDIT_API_KEY", namespace: "nexusfi" }).result();
+    apiKey = apiKeySecret.value ?? "";
+  } catch {
+    runtime.log("WF4: CREDIT_API_KEY not configured — running in demo mode (no credentials)");
+  }
 
   const { reserveAddress } = runtime.config;
 
@@ -621,6 +630,7 @@ const verifyDestChainReady = (
 };
 
 const onCrossChainBridge = (runtime: Runtime<Config>): string => {
+  console.log("[WF5] Cross-Chain Bridge");
   runtime.log("WF5: Cross-Chain Bridge — verifying burn and authorizing mint");
 
   const { bridgeWatchAddress } = runtime.config;

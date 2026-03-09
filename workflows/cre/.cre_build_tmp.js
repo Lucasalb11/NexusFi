@@ -1,4 +1,4 @@
-// tmp.js
+// ../../../../../documents/programacao/nexusfi/workflows/cre/.cre_build_tmp.js
 var __defProp = Object.defineProperty;
 var __export = (target, all) => {
   for (var name in all)
@@ -13878,6 +13878,7 @@ var fetchXlmPrice = (sendRequester) => {
   return data.stellar?.usd ?? 0.12;
 };
 var onProofOfReserve = (runtime2) => {
+  console.log("[WF1] Proof of Reserve");
   runtime2.log("WF1: Proof of Reserve — starting attestation cycle");
   const { reserveAddress } = runtime2.config;
   const httpClient = new ClientCapability;
@@ -13939,6 +13940,7 @@ var computeCreditScore = (metrics, address) => {
   };
 };
 var onAICreditScoring = (runtime2) => {
+  console.log("[WF2] AI Credit Scoring");
   runtime2.log("WF2: AI Credit Scoring — analyzing on-chain transaction history");
   const { reserveAddress } = runtime2.config;
   const httpClient = new ClientCapability;
@@ -13985,6 +13987,7 @@ var fetchRiskMetrics = (sendRequester, reserveAddress) => {
   };
 };
 var onRiskMonitor = (runtime2) => {
+  console.log("[WF3] Risk Monitor");
   runtime2.log("WF3: Risk Monitor — checking protocol health");
   const { reserveAddress } = runtime2.config;
   const httpClient = new ClientCapability;
@@ -14032,6 +14035,7 @@ var checkCreditEligibility = (sendRequester, address, apiKey) => {
   };
 };
 var onPrivacyCreditCheck = (runtime2) => {
+  console.log("[WF4] Privacy Credit Check");
   runtime2.log("WF4: Privacy Credit Check — confidential eligibility verification");
   runtime2.log("WF4: Credentials retrieved from CRE secrets (never on-chain)");
   let apiKey = "";
@@ -14086,6 +14090,7 @@ var verifyDestChainReady = (sendRequester, destRpc) => {
   return ok(response) ? 1 : 0;
 };
 var onCrossChainBridge = (runtime2) => {
+  console.log("[WF5] Cross-Chain Bridge");
   runtime2.log("WF5: Cross-Chain Bridge — verifying burn and authorizing mint");
   const { bridgeWatchAddress } = runtime2.config;
   const httpClient = new ClientCapability;
