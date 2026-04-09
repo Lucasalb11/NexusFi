@@ -17,6 +17,7 @@ We bring mobile-first banking to the 1.4 billion unbanked adults who have smartp
 **The real innovation:** 4 CRE workflows running in parallel as a single WASM bundle on the Chainlink DON, each covering a different hackathon track — Proof of Reserve, AI Credit Scoring, Risk Monitoring, and Confidential HTTP. Not a demo of one feature. A production-grade DeFi protocol.
 
 ---
+<img width="1333" height="667" alt="Captura de Tela 2026-04-09 às 17 11 31" src="https://github.com/user-attachments/assets/a22be3e7-2564-46e0-b41c-0e78280f97db" />
 
 ## Chainlink Submission Checklist 
 
