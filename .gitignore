@@ -73,3 +73,5 @@ nexusfi/
 *.tgz
 .cache/
 .turbo/
+.vercel
+.env*.local
