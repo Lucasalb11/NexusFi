@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import clsx from "clsx";
 import { api, ApiError } from "@/lib/api";
+import { useRelay } from "@/lib/relay";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -156,6 +157,7 @@ function BottomSheet({
 export const dynamic = "force-dynamic";
 
 export default function BridgePage() {
+  const relay = useRelay();
   const [fromChain,   setFromChain]   = useState<Chain>(CHAINS[0]);
   const [toChain,     setToChain]     = useState<Chain>(CHAINS[1]);
   const [asset,       setAsset]       = useState<Asset>(ASSETS[0]);
@@ -214,6 +216,12 @@ export default function BridgePage() {
       : destAddress.trim();
 
     try {
+      // Leaving Stellar burns your tokens, so your passkey signs that burn first.
+      const signedBurn =
+        fromChain.id === "stellar"
+          ? await relay.sign({ action: "burn", token: asset.symbol as "nUSD" | "nBRL", amount: num })
+          : undefined;
+
       // Kick off the API call immediately — it does real on-chain work
       const apiPromise = api.post<{
         success: boolean;
@@ -227,6 +235,7 @@ export default function BridgePage() {
         token: asset.symbol,
         amount: num,
         destAddress: resolvedDest,
+        xdr: signedBurn,
       });
 
       // Animate progress milestones while waiting for the backend

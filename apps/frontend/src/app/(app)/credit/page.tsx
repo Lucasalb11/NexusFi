@@ -18,7 +18,8 @@ import {
 import CreditCardVisual from "@/components/CreditCardVisual";
 import CreditScoreGauge from "@/components/CreditScoreGauge";
 import { formatCurrency, shortenAddress } from "@/lib/format";
-import { api } from "@/lib/api";
+import { api, withAddress } from "@/lib/api";
+import { useRelay } from "@/lib/relay";
 import { useWallet } from "@/context/WalletContext";
 import {
   MOCK_CREDIT_SCORE,
@@ -56,18 +57,9 @@ type CreditInfo = {
   scoreAtOpening: number;
 };
 
-async function signWithFreighter(xdr: string): Promise<string> {
-  const { signTransaction } = await import("@stellar/freighter-api");
-  const result = await signTransaction(xdr, {
-    networkPassphrase: process.env.NEXT_PUBLIC_STELLAR_NETWORK_PASSPHRASE ?? "Test SDF Network ; September 2015",
-  });
-  if (result?.error) throw new Error(result.error.message ?? "Freighter signing failed");
-  if (!result?.signedTxXdr) throw new Error("Freighter not installed. Install the Freighter extension.");
-  return result.signedTxXdr;
-}
-
 export default function CreditPage() {
   const { address } = useWallet();
+  const relay = useRelay();
   const [analyzing, setAnalyzing] = useState(false);
   const [score, setScore] = useState(MOCK_CREDIT_SCORE);
   const [reasoning, setReasoning] = useState<string | null>(null);
@@ -91,37 +83,38 @@ export default function CreditPage() {
   const available = creditLimit - creditUsed;
 
   useEffect(() => {
+    if (!address) return;
     (async () => {
       try {
-        const info = await api.get<CreditInfo>("/api/credit/info");
+        const info = await api.get<CreditInfo>(withAddress("/api/credit/info", address));
         if (info.hasCredit) setCreditInfo(info);
       } catch {
         // fallback to mock
       }
     })();
-  }, []);
+  }, [address]);
 
   const handleOpenCreditLine = useCallback(async () => {
     setOpenLoading(true);
     setTxError(null);
     try {
       const result = await api.post<{ success: boolean; txHash: string; score: number; explorerUrl: string }>(
-        "/api/credit/open", {},
+        "/api/credit/open", { address },
       );
       setOpenTxHash(result.txHash);
-      const info = await api.get<CreditInfo>("/api/credit/info");
+      const info = await api.get<CreditInfo>(withAddress("/api/credit/info", address));
       if (info.hasCredit) setCreditInfo(info);
     } catch (err: any) {
       setTxError(err?.message ?? "Failed to open credit line");
     } finally {
       setOpenLoading(false);
     }
-  }, []);
+  }, [address]);
 
   const requestAnalysis = useCallback(async () => {
     setAnalyzing(true);
     try {
-      const data = await api.get<ScoreResponse>("/api/credit/score");
+      const data = await api.get<ScoreResponse>(withAddress("/api/credit/score", address));
       setScore(data.score);
       setReasoning(data.reasoning);
       setFactors(data.factors);
@@ -132,7 +125,7 @@ export default function CreditPage() {
     } finally {
       setAnalyzing(false);
     }
-  }, [score]);
+  }, [score, address]);
 
   const handleUseCredit = useCallback(async () => {
     const amount = Number(useAmount);
@@ -140,18 +133,16 @@ export default function CreditPage() {
     setUseLoading(true);
     setTxError(null);
     try {
-      const { xdr } = await api.post<{ xdr: string }>("/api/credit/use-unsigned", { amount });
-      const signedXdr = await signWithFreighter(xdr);
-      await api.post("/api/credit/submit-signed", { xdr: signedXdr });
+      await relay.run({ action: "use_credit", amount });
       setUseAmount("");
-      const info = await api.get<CreditInfo>("/api/credit/info");
+      const info = await api.get<CreditInfo>(withAddress("/api/credit/info", address));
       if (info.hasCredit) setCreditInfo(info);
     } catch (err: any) {
       setTxError(err?.message ?? "Failed to use credit");
     } finally {
       setUseLoading(false);
     }
-  }, [useAmount]);
+  }, [useAmount, address, relay]);
 
   const handleRepay = useCallback(async () => {
     const amount = Number(repayAmount);
@@ -159,18 +150,16 @@ export default function CreditPage() {
     setRepayLoading(true);
     setTxError(null);
     try {
-      const { xdr } = await api.post<{ xdr: string }>("/api/credit/repay-unsigned", { amount });
-      const signedXdr = await signWithFreighter(xdr);
-      await api.post("/api/credit/submit-signed", { xdr: signedXdr });
+      await relay.run({ action: "repay", amount });
       setRepayAmount("");
-      const info = await api.get<CreditInfo>("/api/credit/info");
+      const info = await api.get<CreditInfo>(withAddress("/api/credit/info", address));
       if (info.hasCredit) setCreditInfo(info);
     } catch (err: any) {
       setTxError(err?.message ?? "Failed to repay");
     } finally {
       setRepayLoading(false);
     }
-  }, [repayAmount]);
+  }, [repayAmount, address, relay]);
 
   const factorsList = factors
     ? [
@@ -270,7 +259,7 @@ export default function CreditPage() {
             </span>
           </div>
           <p className="text-[11px] text-text-muted">
-            Requires Freighter to sign. use_credit and repay need your wallet signature.
+            Your passkey signs use_credit and repay; the network fee is covered.
           </p>
           {txError && (
             <p className="text-[11px] text-red-400">{txError}</p>

@@ -4,7 +4,7 @@
  * SECURITY: Only NEXT_PUBLIC_* variables are exposed to the browser.
  * NEVER add secret keys (API_SECRET_KEY, SOROBAN_SECRET_KEY, etc.)
  * as NEXT_PUBLIC_ variables — they would be visible in client bundles.
- * Private keys belong in the backend only.
+ * Private keys are read only by the API routes in src/app/api (server side).
  */
 
 const path = require("path");
@@ -47,6 +47,16 @@ const nextConfig = {
   },
   async headers() {
     return [
+      {
+        // Signing UI must never render inside someone else's frame (clickjacking).
+        source: "/:path*",
+        headers: [
+          { key: "Content-Security-Policy", value: "frame-ancestors 'none'" },
+          { key: "X-Frame-Options", value: "DENY" },
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+        ],
+      },
       {
         source: "/sw.js",
         headers: [

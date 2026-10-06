@@ -18,7 +18,8 @@ import clsx from "clsx";
 import TransactionList, { type Transaction } from "@/components/TransactionList";
 import { useWallet } from "@/context/WalletContext";
 import { shortenAddress } from "@/lib/format";
-import { api } from "@/lib/api";
+import { api, withAddress } from "@/lib/api";
+import { useRelay } from "@/lib/relay";
 
 export const dynamic = "force-dynamic";
 
@@ -100,6 +101,7 @@ function parsePaymentQrPayload(payload: string): ParsedQrPayment {
 
 export default function WalletPage() {
   const { address } = useWallet();
+  const relay = useRelay();
   const walletAddress = address ?? "";
 
   const [tab, setTab] = useState<Tab>("history");
@@ -128,7 +130,7 @@ export default function WalletPage() {
     setHistoryLoading(true);
     api
       .get<{ transactions: Array<{ id: string; hash: string; created_at: string; source_account: string; successful: boolean }> }>(
-        "/api/wallet/transactions?limit=50",
+        withAddress("/api/wallet/transactions?limit=50", walletAddress),
       )
       .then((data) => {
         const mapped: Transaction[] = (data.transactions ?? []).map((tx) => ({
@@ -278,11 +280,8 @@ export default function WalletPage() {
     setSending(true);
     setSendResult(null);
     try {
-      const result = await api.post<{ txHash: string; explorerUrl: string }>("/api/wallet/send", {
-        to: sendTo,
-        amount: Number(sendAmount),
-        token: "nUSD",
-      });
+      // Signed by your passkey; the relay only pays the network fee.
+      const result = await relay.run({ action: "transfer", token: "nUSD", to: sendTo.trim(), amount: Number(sendAmount) });
       setSendResult(result.txHash);
       setSendTo("");
       setSendAmount("");

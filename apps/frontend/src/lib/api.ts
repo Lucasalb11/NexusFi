@@ -1,16 +1,10 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
+/** The API lives in this Next.js app (src/app/api), so requests stay same-origin. */
+const API_BASE = "";
 
-const STORAGE_KEY = "nexusfi_wallet";
-
-function getStoredAddress(): string | null {
-  if (typeof window === "undefined") return null;
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return null;
-    return JSON.parse(raw).address ?? null;
-  } catch {
-    return null;
-  }
+/** Appends ?address= for reads; reads are public chain data, so no auth header is involved. */
+export function withAddress(path: string, address: string | null | undefined): string {
+  if (!address) return path;
+  return `${path}${path.includes("?") ? "&" : "?"}address=${encodeURIComponent(address)}`;
 }
 
 type RequestOptions = {
@@ -32,14 +26,8 @@ class ApiError extends Error {
 async function request<T>(path: string, opts: RequestOptions = {}): Promise<T> {
   const { method = "GET", body, headers = {} } = opts;
 
-  const address = getStoredAddress();
-  if (address) {
-    headers["x-stellar-address"] = address;
-  }
-
   const res = await fetch(`${API_BASE}${path}`, {
     method,
-    credentials: "include",
     headers: {
       "Content-Type": "application/json",
       ...headers,

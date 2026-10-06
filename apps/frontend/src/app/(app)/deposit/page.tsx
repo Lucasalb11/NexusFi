@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import clsx from "clsx";
 import { api } from "@/lib/api";
+import { useWallet } from "@/context/WalletContext";
 
 export const dynamic = "force-dynamic";
 
@@ -92,6 +93,7 @@ const PRESET_AMOUNTS: Record<string, number[]> = {
 };
 
 export default function DepositPage() {
+  const { address } = useWallet();
   const [mode, setMode] = useState<Mode>("deposit");
   const [step, setStep] = useState<Step>("method");
   const [selectedMethod, setSelectedMethod] = useState<PaymentMethod | null>(null);
@@ -138,6 +140,7 @@ export default function DepositPage() {
         endpoint,
         {
           amount: Number(amount),
+          address,
           fiatCurrency: fiat.toLowerCase(),
           paymentMethod: selectedMethod,
         },

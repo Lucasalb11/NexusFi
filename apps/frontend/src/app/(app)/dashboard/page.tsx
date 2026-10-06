@@ -23,7 +23,7 @@ import {
   MOCK_RISK_METRICS,
 } from "@/lib/mock-data";
 import { useWallet } from "@/context/WalletContext";
-import { api } from "@/lib/api";
+import { api, withAddress } from "@/lib/api";
 import { shortenAddress } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
@@ -63,9 +63,13 @@ export default function DashboardPage() {
   const [loadingBalance, setLoadingBalance] = useState(true);
 
   const fetchBalance = useCallback(async () => {
+    if (!address) {
+      setLoadingBalance(false);
+      return;
+    }
     setLoadingBalance(true);
     try {
-      const data = await api.get<BalanceData>("/api/wallet/balance");
+      const data = await api.get<BalanceData>(withAddress("/api/wallet/balance", address));
       setBalanceData(data);
       const total = Object.entries(data.tokens ?? {}).reduce(
         (sum, [, v]) => sum + (parseFloat(v?.formatted ?? "0") || 0),
@@ -78,7 +82,7 @@ export default function DashboardPage() {
     } finally {
       setLoadingBalance(false);
     }
-  }, []);
+  }, [address]);
 
   const fetchRisk = useCallback(async () => {
     setLoadingRisk(true);

@@ -1,0 +1,4 @@
+{
+  "installCommand": "yarn install --frozen-lockfile --ignore-engines",
+  "buildCommand": "yarn build"
+}

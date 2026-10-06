@@ -2,22 +2,18 @@
   "name": "nexusfi",
   "version": "0.1.0",
   "private": true,
-  "description": "NexusFi - Monorepo (Frontend, Backend, Soroban Contracts, Workflows)",
+  "description": "NexusFi - Monorepo (Next.js app with API routes, Soroban contracts, CRE workflows)",
   "workspaces": [
-    "apps/frontend",
-    "apps/backend"
+    "apps/frontend"
   ],
   "scripts": {
-    "dev": "concurrently \"yarn workspace frontend dev\" \"yarn workspace backend dev\"",
-    "dev:frontend": "yarn workspace frontend dev",
-    "dev:backend": "yarn workspace backend dev",
-    "build": "yarn workspaces run build",
+    "dev": "yarn workspace frontend dev",
+    "build": "yarn workspace frontend build",
     "build:frontend": "yarn workspace frontend build",
-    "build:backend": "yarn workspace backend build",
     "lint": "yarn workspaces run lint",
     "test": "yarn workspaces run test",
     "clean": "yarn workspaces run clean && rm -rf node_modules",
-    "setup:hooks": "cp scripts/pre-commit-secrets.sh .git/hooks/pre-commit && chmod +x .git/hooks/pre-commit && echo '✅ Pre-commit secret scanner installed.'",
+    "setup:hooks": "cp scripts/pre-commit-secrets.sh .git/hooks/pre-commit && chmod +x .git/hooks/pre-commit && echo '\u2705 Pre-commit secret scanner installed.'",
     "scan:secrets": "gitleaks detect --source . --config .gitleaks.toml --verbose"
   },
   "engines": {

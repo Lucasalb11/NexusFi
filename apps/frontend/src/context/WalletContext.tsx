@@ -31,6 +31,8 @@ type WalletState = {
   setActiveWallet: (contractId: string) => void;
   refreshWallets: () => Promise<void>;
   disconnect: () => void;
+  /** Signs the wallet's authorization in an unsigned transaction (passkey prompt); returns signed XDR. */
+  signWithPasskey: (xdr: string) => Promise<string>;
 };
 
 const WalletContext = createContext<WalletState>({
@@ -47,9 +49,23 @@ const WalletContext = createContext<WalletState>({
   setActiveWallet: () => {},
   refreshWallets: async () => {},
   disconnect: () => {},
+  signWithPasskey: async () => {
+    throw new Error("No wallet connected");
+  },
 });
 
 const STORAGE_KEY = "nexusfi_wallet";
+/** Every wallet created or connected on this device. The server keeps no record of wallets. */
+const WALLETS_KEY = "nexusfi_wallets";
+
+function readWallets(): WalletEntry[] {
+  try {
+    const list = JSON.parse(localStorage.getItem(WALLETS_KEY) ?? "[]");
+    return Array.isArray(list) ? list : [];
+  } catch {
+    return [];
+  }
+}
 
 const RPC_URL = process.env.NEXT_PUBLIC_STELLAR_RPC_URL ?? "https://soroban-testnet.stellar.org";
 const NETWORK_PASSPHRASE =
@@ -76,15 +92,8 @@ export function WalletProvider({ children }: { children: ReactNode }) {
   const kitRef = useRef<any>(null);
 
   const refreshWallets = useCallback(async () => {
-    try {
-      const data = await api.get<{ wallets: WalletEntry[] }>("/api/passkey/wallets");
-      if (data.wallets && data.wallets.length > 0) {
-        setWallets(data.wallets);
-      }
-      // If server returns empty (session expired), keep existing wallets in state
-    } catch {
-      // Keep existing wallets — don't blank out the list on network error
-    }
+    const list = readWallets();
+    if (list.length > 0) setWallets(list);
   }, []);
 
   const persist = useCallback((addr: string, kid: string, createdAt?: string) => {
@@ -94,6 +103,10 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       STORAGE_KEY,
       JSON.stringify({ address: addr, keyId: kid, createdAt: createdAt ?? new Date().toISOString() }),
     );
+    const list = readWallets().filter((w) => w.contractId !== addr);
+    list.push({ keyId: kid, contractId: addr, createdAt: createdAt ?? new Date().toISOString() });
+    localStorage.setItem(WALLETS_KEY, JSON.stringify(list));
+    setWallets(list);
   }, []);
 
   const setActiveWallet = useCallback(
@@ -160,11 +173,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     try {
       const xdr = signedTx.toXDR();
       await api.post("/api/passkey/submit", { xdr });
-      const regResult = await api.post<{ createdAt?: string }>("/api/passkey/register", {
-        keyId: keyIdBase64,
-        contractId,
-      });
-      persist(contractId, keyIdBase64, regResult.createdAt);
+      persist(contractId, keyIdBase64);
       await refreshWallets();
       // Trigger airdrop in background — gives the wallet its starting balance
       api.post("/api/passkey/airdrop", { contractId }).catch(() => {});
@@ -174,7 +183,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       const msg = err?.message ?? "Failed to create account";
       console.error("Passkey submit/register error:", msg);
       setError(
-        "Falha ao comunicar com o servidor. Verifique se o backend está rodando e se a URL da API está correta."
+        "Falha ao comunicar com o servidor. Tente novamente."
       );
       setIsLoading(false);
       return null;
@@ -189,16 +198,8 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       const kit = await getPasskeyKit();
       kitRef.current = kit;
 
-      const { keyIdBase64, contractId } = await kit.connectWallet({
-        getContractId: async (kid: string) => {
-          try {
-            const data = await api.get<{ contractId: string }>(`/api/passkey/lookup/${encodeURIComponent(kid)}`);
-            return data.contractId;
-          } catch {
-            return undefined;
-          }
-        },
-      });
+      // passkey-kit derives the wallet address from the passkey on-chain; no server lookup needed.
+      const { keyIdBase64, contractId } = await kit.connectWallet();
 
       persist(contractId, keyIdBase64);
       await refreshWallets();
@@ -244,11 +245,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     try {
       const xdr = signedTx.toXDR();
       await api.post("/api/passkey/submit", { xdr });
-      const regResult = await api.post<{ createdAt?: string }>("/api/passkey/register", {
-        keyId: keyIdBase64,
-        contractId,
-      });
-      persist(contractId, keyIdBase64, regResult.createdAt);
+      persist(contractId, keyIdBase64);
       await refreshWallets();
       api.post("/api/passkey/airdrop", { contractId }).catch(() => {});
       setIsLoading(false);
@@ -257,7 +254,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       const msg = err?.message ?? "Failed to add wallet";
       console.error("Passkey submit/register error:", msg);
       setError(
-        "Falha ao comunicar com o servidor. Verifique se o backend está rodando."
+        "Falha ao comunicar com o servidor. Tente novamente."
       );
       setIsLoading(false);
       return null;
@@ -265,11 +262,6 @@ export function WalletProvider({ children }: { children: ReactNode }) {
   }, [persist, refreshWallets]);
 
   const disconnect = useCallback(async () => {
-    try {
-      await api.post("/api/passkey/logout", {});
-    } catch {
-      // ignore
-    }
     setAddress(null);
     setKeyId(null);
     setWallets([]);
@@ -277,6 +269,21 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     kitRef.current = null;
     localStorage.removeItem(STORAGE_KEY);
   }, []);
+
+  const signWithPasskey = useCallback(
+    async (xdr: string): Promise<string> => {
+      if (!keyId) throw new Error("Connect your wallet first");
+      let kit = kitRef.current;
+      if (!kit?.wallet) {
+        kit = await getPasskeyKit();
+        await kit.connectWallet({ keyId });
+        kitRef.current = kit;
+      }
+      const signed = await kit.sign(xdr, { keyId });
+      return signed.built!.toXDR();
+    },
+    [keyId],
+  );
 
   return (
     <WalletContext.Provider
@@ -294,6 +301,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         setActiveWallet,
         refreshWallets,
         disconnect,
+        signWithPasskey,
       }}
     >
       {children}
