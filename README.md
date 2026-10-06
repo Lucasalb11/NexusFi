@@ -2,7 +2,7 @@
 
 > **[Chainlink Convergence Hackathon](https://chain.link/hackathon)** · Feb 6 – Mar 8, 2026 · Targeting 4 tracks · $69K+ in prizes
 
-[![Live App](https://img.shields.io/badge/Live%20App-nexusfi.up.railway.app-BFA36B?style=for-the-badge)](https://nexusfi-production-aeb5.up.railway.app)
+[![Live App](https://img.shields.io/badge/Live%20App-nexusfi--six.vercel.app-BFA36B?style=for-the-badge)](https://nexusfi-six.vercel.app)
 [![GitHub](https://img.shields.io/badge/GitHub-Lucasalb11%2FNexusFi-181717?style=for-the-badge&logo=github)](https://github.com/Lucasalb11/NexusFi)
 [![Demo Video](https://img.shields.io/badge/Demo%20Video-Watch%20Now-FF0000?style=for-the-badge&logo=youtube)](https://youtu.be/jhCU4G1dD0o)
 
@@ -25,7 +25,7 @@ We bring mobile-first banking to the 1.4 billion unbanked adults who have smartp
 |-------------|--------|------|
 | 3–5 min demo video | ✅ | [Watch on YouTube](https://youtu.be/jhCU4G1dD0o) |
 | Public GitHub repository | ✅ | [github.com/Lucasalb11/NexusFi](https://github.com/Lucasalb11/NexusFi) |
-| Live deployed application | ✅ | [nexusfi-production-aeb5.up.railway.app](https://nexusfi-production-aeb5.up.railway.app) |
+| Live deployed application | ✅ | [nexusfi-six.vercel.app](https://nexusfi-six.vercel.app) (moved from Railway to Vercel in Oct 2026) |
 | CRE workflow simulation | ✅ | [Simulate in 3 commands](#cre-workflow-simulation) |
 | README with all Chainlink files | ✅ | [Files Using Chainlink](#files-using-chainlink) |
 | Soroban contracts on Stellar Testnet | ✅ | [4 contracts deployed](#live-contracts-stellar-testnet) |
@@ -62,12 +62,12 @@ The demo covers:
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│             NexusFi Mobile PWA (Next.js 14 · Railway)           │
+│             NexusFi Mobile PWA (Next.js 14 · Vercel)            │
 │    Dashboard │ Wallet │ Credit Card │ Bridge │ Confidential      │
 └───────┬──────────────────────────────────────┬──────────────────┘
         │ REST API                             │ MoonPay Widget
 ┌───────▼────────────────────────┐    ┌───────▼───────────────────┐
-│      Backend (Express/TS)      │    │       MoonPay API          │
+│   API routes (Next.js, /api)   │    │       MoonPay API          │
 │  Stellar · Soroban · CRE · MP  │    │  PIX · SWIFT · Card · SEPA │
 └─┬──────────┬──────────┬────────┘    └───────────────────────────┘
   │          │          │
@@ -218,10 +218,9 @@ const result = httpClient.sendRequest(
 | [contracts/evm/src/RiskReport.sol](https://github.com/Lucasalb11/NexusFi/blob/main/contracts/evm/src/RiskReport.sol) | Sepolia — receives WF3 risk reports; emits `AlertRaised`/`AlertCleared` events |
 | [contracts/evm/src/PrivacyCreditCheck.sol](https://github.com/Lucasalb11/NexusFi/blob/main/contracts/evm/src/PrivacyCreditCheck.sol) | Sepolia — receives WF4 eligibility; stores only `keccak256(userId)` — **zero PII on-chain** |
 | [contracts/evm/script/Deploy.s.sol](https://github.com/Lucasalb11/NexusFi/blob/main/contracts/evm/script/Deploy.s.sol) | Foundry deploy script — deploys all 4 contracts with hardcoded CRE Forwarder address |
-| [apps/backend/src/services/cre-bridge.ts](https://github.com/Lucasalb11/NexusFi/blob/main/apps/backend/src/services/cre-bridge.ts) | Backend integration layer — routes CRE workflow results to frontend and Soroban contracts |
-| [apps/backend/src/routes/cre.ts](https://github.com/Lucasalb11/NexusFi/blob/main/apps/backend/src/routes/cre.ts) | REST API exposing CRE workflow results (`GET /api/cre/proof-of-reserve`, `/credit-score`, `/risk`, `/privacy-check`) |
-| [apps/backend/src/routes/bridge.ts](https://github.com/Lucasalb11/NexusFi/blob/main/apps/backend/src/routes/bridge.ts) | Cross-chain bridge API — quote, execute, status |
-| [apps/backend/src/services/bridge.ts](https://github.com/Lucasalb11/NexusFi/blob/main/apps/backend/src/services/bridge.ts) | Bridge service — burn on Stellar, poll CRE attestation, authorize mint on destination |
+| [apps/frontend/src/server/cre-bridge.ts](https://github.com/Lucasalb11/NexusFi/blob/main/apps/frontend/src/server/cre-bridge.ts) | Server integration layer — routes CRE workflow results to frontend and Soroban contracts |
+| [apps/frontend/src/app/api/cre](https://github.com/Lucasalb11/NexusFi/tree/main/apps/frontend/src/app/api/cre) | REST API exposing CRE workflow results (`GET /api/cre/proof-of-reserve`, `/credit-score`, `/risk`, `/privacy-check`) |
+| [apps/frontend/src/app/api/bridge/execute/route.ts](https://github.com/Lucasalb11/NexusFi/blob/main/apps/frontend/src/app/api/bridge/execute/route.ts) | Cross-chain bridge API: the user-signed burn on Stellar is real, the other chain is simulated |
 
 ---
 
@@ -305,9 +304,9 @@ cd workflows/cre && bun install
 cre workflow simulate --workflow-file workflow.yaml --target staging
 
 # 3. Start the full stack
-cd ../.. && cp .env.example .env   # fill in SOROBAN_SECRET_KEY at minimum
+cd ../.. && cp .env.example apps/frontend/.env.local   # fill in SOROBAN_SECRET_KEY and FEE_PAYER_SECRET
 yarn dev
-# → Frontend: http://localhost:3000   Backend: http://localhost:3001
+# → App and API: http://localhost:3000
 
 # 4. Verify live contracts on Stellar Testnet
 curl https://horizon-testnet.stellar.org/accounts/GBZXN3PIRZGNMHGA7MUUUF4GWPY5AYPV6LY4UV2GL6VJGIQRXFDNMADI \
@@ -315,10 +314,10 @@ curl https://horizon-testnet.stellar.org/accounts/GBZXN3PIRZGNMHGA7MUUUF4GWPY5AY
 # → The XLM balance backing nUSD reserves
 
 # 5. Check all CRE API endpoints
-curl http://localhost:3001/api/cre/proof-of-reserve
-curl http://localhost:3001/api/cre/credit-score
-curl http://localhost:3001/api/cre/risk
-curl http://localhost:3001/api/cre/privacy-check
+curl https://nexusfi-six.vercel.app/api/cre/proof-of-reserve
+curl "https://nexusfi-six.vercel.app/api/cre/credit-score?address=GBZXN3PIRZGNMHGA7MUUUF4GWPY5AYPV6LY4UV2GL6VJGIQRXFDNMADI"
+curl https://nexusfi-six.vercel.app/api/cre/risk
+curl "https://nexusfi-six.vercel.app/api/cre/privacy-check?address=GBZXN3PIRZGNMHGA7MUUUF4GWPY5AYPV6LY4UV2GL6VJGIQRXFDNMADI"
 ```
 
 ---
@@ -369,18 +368,34 @@ NexusFi targets **financial inclusion** — specifically the 1.4 billion adults 
 
 ---
 
+## Security model (Oct 2026 rework)
+
+The first version trusted an `x-stellar-address` header and moved funds with the admin key,
+so anyone could send or burn another user's tokens. Now:
+
+- **Money moves only with the owner's signature.** Transfers, bridge burns and credit
+  use/repay are built by the server, authorized by the user's passkey in the browser, and
+  relayed by a fee payer that holds no role in any contract
+  ([`src/server/relay.ts`](apps/frontend/src/server/relay.ts)). The relay accepts only
+  allowlisted calls whose auth entries come from the user, and simulation enforces those
+  signatures.
+- **Server mints are capped** by the recipient's balance (airdrop, demo deposit, incoming
+  bridge), and XLM top-ups only go to deployed wallets holding less than 1 XLM.
+- **No server state:** no sessions or wallet store; passkey-kit derives the wallet address on-chain.
+- **MoonPay webhook** requires a fresh `Moonpay-Signature-V2` and refuses requests without a key.
+
+---
+
 ## Monorepo Structure
 
 ```
 NexusFi/
 ├── apps/
-│   ├── frontend/              # Next.js 14 PWA (mobile-first, deployed on Railway)
-│   │   └── src/app/           # / (landing) · /governance · /dashboard · /wallet
-│   │                          # /credit · /bridge · /confidential · /settings
-│   └── backend/               # Express API server
+│   └── frontend/              # Next.js 14 PWA + API routes (deployed on Vercel)
 │       └── src/
-│           ├── routes/        # wallet · credit · deposit · bridge · cre · passkey
-│           └── services/      # stellar · soroban · tokens · bridge · cre-bridge · moonpay
+│           ├── app/           # / · /dashboard · /wallet · /credit · /bridge · /deposit · ...
+│           ├── app/api/       # wallet · tx (relay) · credit · deposit · bridge · cre · passkey
+│           └── server/        # relay · faucet · stellar · soroban · tokens · cre-bridge · moonpay
 ├── contracts/
 │   ├── nexusfi_token/         # nUSD + nBRL (SEP-41 compatible, Soroban/Rust)
 │   ├── credit_score/          # AI credit score storage (Soroban/Rust)
@@ -434,8 +449,8 @@ Foundry (Sepolia contracts)
 ```bash
 git clone https://github.com/Lucasalb11/NexusFi.git
 cd NexusFi && yarn install
-cp .env.example .env   # fill in SOROBAN_SECRET_KEY and NUSD_CONTRACT_ID at minimum
-yarn dev               # frontend :3000 + backend :3001
+cp .env.example apps/frontend/.env.local   # fill in SOROBAN_SECRET_KEY and FEE_PAYER_SECRET
+yarn dev               # app + API on :3000
 ```
 
 ### Build Soroban Contracts
